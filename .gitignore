@@ -1,3 +1,4 @@
-googletest-maser/*
-*cmake-build-debug
+#Общий гитигнор
 *.idea/
+*.out
+*cmake-build-debug/
