@@ -3,18 +3,22 @@
 
 #include <boost/asio.hpp>
 
+#include "connection.h"
+
 #define SERVICE_PORT 9000
 
 class AsyncServer {
 public:
     explicit AsyncServer(boost::asio::io_service &_io_service, int port);
 
+    explicit AsyncServer(boost::asio::io_service &&_io_service, int port);
+
     void Dispatch();
 
 private:
-    void run();
+    void run() { m_io_service.run(); };
 
-    void onAccept();
+    void onAccept(std::shared_ptr<Connection> new_connection, boost::system::error_code &ec);
 
     void startAccept();
 

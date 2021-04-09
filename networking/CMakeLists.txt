@@ -1,18 +1,20 @@
 cmake_minimum_required(VERSION 3.8)
 project(HomeWork1)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS "-std=c++0x -Wall -ggdb3")
 
-include_directories(networking/project/include)
+include_directories(project/include)
 include_directories(SYSTEM ${CMAKE_BINARY_DIR}/include)
 
 include(ExternalProject) # Подключает ExternalProject_Add
 find_package(Git REQUIRED)
 
-add_library(server_library STATIC networking/project/src/server.cpp)
+add_library(networking STATIC project/src/server.cpp
+                              project/src/connection.cpp
+                              project/src/handler.cpp)
 
 option(ENABLE_COVERAGE "Build tests coverage statistic" OFF)
 if (ENABLE_COVERAGE)
@@ -37,18 +39,16 @@ if (BUILD_TESTS)
 
     enable_testing()
 
-    file(GLOB test_source test/composition.cpp
-                          test/playlist.cpp
-                          test/dataloader.cpp
-                          test/compilation.cpp
-                          test/processing.cpp)
+    file(GLOB test_source tests/server_module.cpp
+                          tests/connection_module.cpp
+                          tests/handlers_module.cpp)
 
     foreach (file ${test_source})
         set(name)
         get_filename_component(name ${file} NAME_WE)
         add_executable("${name}_tests" ${file})
         target_link_libraries("${name}_tests" gtest_main)
-        target_link_libraries("${name}_tests" hw_lib)
+        target_link_libraries("${name}_tests" networking)
         add_test(NAME ${name} COMMAND "${name}_tests")
     endforeach ()
 endif ()
