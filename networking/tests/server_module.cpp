@@ -7,22 +7,8 @@
 
 TEST(ServerTests, ConstructorLValsue) {
     boost::asio::io_context io;
-    AsyncServer server(io, SERVICE_PORT);
-    EXPECT_TRUE(false);
+    ASSERT_NO_THROW(AsyncServer server(io, SERVICE_PORT));
 };
-
-TEST(ServerTests, ConstructorRValue) {
-    AsyncServer server(boost::asio::io_context(), SERVICE_PORT);
-    EXPECT_TRUE(false);
-};
-
-TEST(ServerTests, Dispatching) {
-    boost::asio::io_context io;
-    AsyncServer server(io, SERVICE_PORT);
-    server.Dispatch();
-
-    EXPECT_TRUE(false);
-}
 
 //TEST(ServerTests, start)
 

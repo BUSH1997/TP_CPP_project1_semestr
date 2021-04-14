@@ -2,26 +2,19 @@
 
 #include "server.h"
 
-AsyncServer::AsyncServer(boost::asio::io_service &_io_service, int port) : m_io_service(_io_service),
-                                                                 m_tcp_acceptor(m_io_service) {
-    boost::asio::ip::tcp::endpoint tcp_endpoint(boost::asio::ip::tcp::v4(), port);
-
-}
-
-AsyncServer::AsyncServer(boost::asio::io_service &&_io_service, int port) : m_io_service(_io_service),
-                                                                           m_tcp_acceptor(m_io_service) {
-    boost::asio::ip::tcp::endpoint tcp_endpoint(boost::asio::ip::tcp::v4(), port);
-
+AsyncServer::AsyncServer(boost::asio::io_service &io_service_, int port_)
+        : m_io_service(io_service_), m_acceptor(boost::asio::ip::tcp::acceptor(m_io_service)) {
+    /* Some logic */
 }
 
 void AsyncServer::Dispatch() {
-
+    /* Some logic */
 }
 
 void AsyncServer::startAccept() {
-
+    /* Some logic */
 }
 
-void AsyncServer::onAccept(std::shared_ptr<Connection> new_connection, boost::system::error_code &ec) {
-
+void AsyncServer::onAccept() {
+    /* Some logic */
 }

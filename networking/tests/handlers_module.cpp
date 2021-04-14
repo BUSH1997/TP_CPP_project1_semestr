@@ -1,26 +1,28 @@
+#include <memory>
 #include "gtest/gtest.h"
 #include "handler.h"
+#include "handlers_chain.h"
 
-TEST(HandlerTest, CanHandle) {
-    Handler handler;
-    ASSERT_FALSE(handler.canHandle("some message"));
+TEST(HandlerTest, GetInstance) {
+    std::shared_ptr<HandlersChain> instance1 = HandlersChain::GetInstance();
+    std::shared_ptr<HandlersChain> instance2 = HandlersChain::GetInstance();
+    ASSERT_EQ(instance1, instance2);
 }
 
-TEST(HandlersPoolTest, GetInstance) {
-    HandlersPool *pool1 = HandlersPool::GetInstance();
-    HandlersPool *pool2 = HandlersPool::GetInstance();
+TEST(HandlerTest, GetIterator) {
+    std::shared_ptr<HandlersChain> instance = HandlersChain::GetInstance();
 
-    ASSERT_EQ(pool1, pool2);
-};
+    auto it_beg = instance->GetBeg();
+    auto it_end = instance->GetEnd();
+    ASSERT_EQ(++it_beg, it_end);
+}
 
-TEST(HandlersPoolTest, SetNewHandler) {
-    HandlersPool *pool = HandlersPool::GetInstance();
-    ASSERT_EQ(pool->getBeg(), pool->getEnd());
+TEST(HandlerTest, PushHandler) {
+    std::shared_ptr<HandlersChain> instance = HandlersChain::GetInstance();
 
-    Handler new_handler;
-    HandlersPool::SetNewHandler(new_handler);
-    ASSERT_EQ(pool->getBeg() + 1, pool->getEnd());
-};
+    Handler handler;
+    ASSERT_NO_THROW(instance->PushHandler(handler));
+}
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

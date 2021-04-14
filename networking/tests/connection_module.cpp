@@ -10,23 +10,12 @@ TEST(ConnectionTests, Constructor) {
     ASSERT_NO_THROW(Connection con(io));
 };
 
-class ConnectionFixture : public ::testing::Test {
-protected:
-    ConnectionFixture() : connection(boost::asio::io_context()) {}
-
-    Connection connection;
+TEST(ConnectionTests, GetSocket) {
+    boost::asio::io_context io;
+    Connection con(io);
+    boost::asio::ip::tcp::socket &socket = con.GetSocket();
+    ASSERT_TRUE(socket.available());
 };
-
-TEST_F(ConnectionFixture, GetResponse) {
-    auto err_type = boost::asio::error::eof;
-    ASSERT_THROW(connection.GetRequest(err_type), std::exception);
-}
-
-TEST_F(ConnectionFixture, SendResponse) {
-    auto err_type = boost::asio::error::eof;
-    ASSERT_THROW(connection.GetRequest(err_type), std::exception);
-}
-
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

@@ -1,28 +1,14 @@
 #include "connection.h"
 
-Connection::Connection(boost::asio::io_context &io_context) : socket(io_context) {}
-Connection::Connection(boost::asio::io_context &&io_context) : socket(io_context) {}
-
-void Connection::GetRequest(const boost::system::error_code &ec) {
-    if (ec) {
-        throw std::exception();
-    }
+Connection::Connection(boost::asio::io_service &io_service_)
+        : m_socket(io_service_) {
+    /* Some logic */
 }
 
-void Connection::SendResponse(boost::system::error_code &ec) {
-    if (ec) {
-        throw std::exception();
-    }
+void Connection::GetRequest() {
+    /* Some logic */
 }
 
-std::string Connection::read() {
-    return "placeholder";
-}
-
-void Connection::write(const std::string &message) {
-
-}
-
-void Connection::handleMessage(const std::string &message) {
-
+void Connection::SendResponse() {
+    /* Some logic */
 }

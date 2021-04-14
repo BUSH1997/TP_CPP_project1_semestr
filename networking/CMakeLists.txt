@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.1)
 project(HomeWork1)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -12,9 +12,12 @@ include_directories(SYSTEM ${CMAKE_BINARY_DIR}/include)
 include(ExternalProject) # Подключает ExternalProject_Add
 find_package(Git REQUIRED)
 
+add_executable(server project/main.cpp)
+target_link_libraries(server boost_system boost_thread pthread)
+
 add_library(networking STATIC project/src/server.cpp
                               project/src/connection.cpp
-                              project/src/handler.cpp)
+                              project/src/handlers_chain.cpp)
 
 option(ENABLE_COVERAGE "Build tests coverage statistic" OFF)
 if (ENABLE_COVERAGE)

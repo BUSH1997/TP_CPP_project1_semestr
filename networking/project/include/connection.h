@@ -2,33 +2,31 @@
 #define CONNECTION_H
 
 #include <boost/asio.hpp>
+#include <boost/array.hpp>
 #include <array>
 #include <memory>
 
 #define BUFFER_SIZE 4096
 
+class Message {
+
+};
+
 class Connection : public std::enable_shared_from_this<Connection> {
 public:
-    explicit Connection(boost::asio::io_context &io_context);
-    explicit Connection(boost::asio::io_context &&io_context);
+    explicit Connection(boost::asio::io_service &io_service_);
 
-    void GetRequest(const boost::system::error_code &ec);
+    inline boost::asio::ip::tcp::socket &GetSocket() { return m_socket; }
 
-    void SendResponse(boost::system::error_code &ec);
+    void GetRequest(); // Это будет колбек для передачи полученного буффера в цепь хендлеров
 
-    boost::asio::ip::tcp::socket &GetSock() { return socket; }
+    void SendResponse(); // Этот колбек будем дергать, чтобы отправить сообщение
 
 private:
-    std::string read();
-
-    void write(const std::string &message);
-
-    void handleMessage(const std::string &message);
-
-    boost::asio::ip::tcp::socket socket;
-    std::array<char, 4096> buffer;
-    std::string request;
-    std::string response;
+    boost::asio::ip::tcp::socket m_socket;
+    boost::array<char, BUFFER_SIZE> m_msg_buffer;
+    Message request;
+    Message response;
 };
 
 #endif //CONNECTION_H
