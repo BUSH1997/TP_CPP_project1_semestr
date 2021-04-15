@@ -36,9 +36,23 @@ include_directories(${GTEST_INCLUDE_DIRS})
 message(${GTEST_LIBRARIES})
 message(${GTEST_INCLUDE_DIRS})
 
-#add_executable(tests tests/test.cpp)
+add_executable(tests_parse tests/tests_jsonParser.cpp)
+target_link_libraries(tests_parse ${GTEST_LIBRARIES} -lpthread)
+target_link_libraries(tests_parse jsonDatalib)
+target_link_libraries(tests_parse jsonParserlib)
+target_include_directories(tests_parse PUBLIC project/include)
 
-#target_link_libraries(tests ${GTEST_LIBRARIES} -lpthread)
-#target_link_libraries(tests matrix_lib)
+add_executable(tests_wrapper tests/tests_wrapperBD.cpp)
+target_link_libraries(tests_wrapper ${GTEST_LIBRARIES} -lpthread)
+target_link_libraries(tests_wrapper wrapperBDlib)
+target_include_directories(tests_wrapper PUBLIC project/include)
+
+add_executable(tests_handler tests/tests_handlers.cpp)
+target_link_libraries(tests_handler ${GTEST_LIBRARIES} -lpthread)
+target_link_libraries(tests_handler handlerslib)
+target_link_libraries(tests_handler wrapperBDlib)
+target_link_libraries(tests_handler jsonDatalib)
+target_link_libraries(tests_handler jsonParserlib)
+target_include_directories(tests_handler PUBLIC project/include)
 
 

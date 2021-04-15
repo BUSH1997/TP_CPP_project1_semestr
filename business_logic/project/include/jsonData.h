@@ -13,7 +13,6 @@ public:
     std::string date;
     std::string text;
     std::string contentType; // "audio" / "text"
-    std::string messageType; //"public" / "private"
     std::string name;
     std::string surname;
     int age;
@@ -25,7 +24,7 @@ public:
     int pushServerPort;
     JsonData* messages;
     int messagesNumber;
-    std::string chatType;
+    std::string chatType; //"public" / "private"
 };
 
 #endif //BUSINESSLOGIC_JSONDATA_H

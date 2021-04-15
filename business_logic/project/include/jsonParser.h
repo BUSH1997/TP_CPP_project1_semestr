@@ -4,6 +4,7 @@
 #include "jsonData.h"
 
 class JsonParser {
+public:
     static JsonData jsonToJsonData(const std::string& json);
     static std::string jsonDataToJson(const JsonData& jsonData);
 };

@@ -9,51 +9,55 @@ static void completeJsonData(JsonData& jsonDataNew , const NewMessages& messages
 
 class Handler {
 public:
-    virtual bool canHandle() = 0;
+    virtual bool canHandle(const JsonData& jsonData) ;
 
-    virtual JsonData handleMessage() = 0;
+    virtual JsonData handleMessage(const JsonData& jsonData);
 };
 
 
 class UserCreatorHandler : public Handler {
-    bool canHandle(const JsonData& jsonData);
+public:
+    bool canHandle(const JsonData& jsonData) override;
 
-    JsonData handleMessage(const JsonData& jsonData) ;
+    JsonData handleMessage(const JsonData& jsonData) override;
 
 };
 
 class UserAuthorizerHandler : public Handler {
-    bool canHandle(const JsonData& jsonData);
+public:
+    bool canHandle(const JsonData& jsonData) override;
 
-    JsonData handleMessage(const JsonData& jsonData);
-
+    JsonData handleMessage(const JsonData& jsonData) override;
 };
 
 class OldMessagesUpdaterHandler : public Handler {
 public:
-    JsonData handleMessage(const JsonData& jsonData);
+    JsonData handleMessage(const JsonData& jsonData) override;
 
     static void completeJsonData(JsonData& jsonDataNew , const NewMessages& messages) {};
 };
 
 
 class MessageControllerHandler : public Handler {
-    bool canHandle(const JsonData& jsonData);
+public:
+    bool canHandle(const JsonData& jsonData) override;
 
-    JsonData handleMessage(const JsonData& jsonData);
+    JsonData handleMessage(const JsonData& jsonData) override;
 
 };
 
 class MessageUpdaterHandler : public Handler {
-    bool canHandle(const JsonData& jsonData);
+public:
+    bool canHandle(const JsonData& jsonData) override;
 
-    JsonData handleMessage(const JsonData& jsonData);
+    JsonData handleMessage(const JsonData& jsonData) override;
 };
 
 class LoadArchiveHandler : public Handler {
-    bool canHandle(const JsonData& jsonData);
+public:
+    bool canHandle(const JsonData& jsonData) override;
 
-    JsonData handleMessage(const JsonData& jsonData);
+    JsonData handleMessage(const JsonData& jsonData) override;
 
 };
 
