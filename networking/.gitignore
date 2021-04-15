@@ -1,0 +1,5 @@
+googletest-maser/*
+*cmake-build-debug
+*.idea/
+*cmake-build-default/
+*build/

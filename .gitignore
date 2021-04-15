@@ -1,0 +1,4 @@
+#Общий гитигнор
+*.idea/
+*.out
+*cmake-build-debug/
