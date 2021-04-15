@@ -14,17 +14,17 @@ public:
 
     HandlersChain &operator=(const HandlersChain &handlers_chain) = delete;
 
-    static inline void PushHandler(const Handler &handler) { handlers_chain.push_back(handler); }
+    inline void PushHandler(const Handler &handler) { m_handlers_chain.push_back(handler); }
 
-    static inline std::list<Handler>::iterator GetBeg() { return handlers_chain.begin(); }
+    inline std::list<Handler>::iterator GetBeg() { return m_handlers_chain.begin(); }
 
-    static inline std::list<Handler>::iterator GetEnd() { return handlers_chain.end(); }
+    inline std::list<Handler>::iterator GetEnd() { return m_handlers_chain.end(); }
 
 
 private:
     HandlersChain() = default;
 
-    static inline std::list<Handler> handlers_chain;
+    std::list<Handler> m_handlers_chain;
     static inline std::shared_ptr<HandlersChain> m_singleton;
     static inline std::mutex m_mutex;
 

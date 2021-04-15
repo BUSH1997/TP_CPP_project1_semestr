@@ -4,11 +4,15 @@
 #include <vector>
 #include <string>
 
+class Message {
+
+};
+
 class Handler {
 public:
-    virtual bool canHandle(const std::string &message) { return false; }
+    virtual bool canHandle(const Message &request) { return false; }
 
-    virtual void handleMessage(const std::string &message) {}
+    virtual Message handleMessage(const Message &request) {}
 };
 
 #endif //HANDLER_H

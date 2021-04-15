@@ -13,11 +13,10 @@ public:
 
     void Dispatch();
 
-    inline void run() { m_io_service.run(); };
-
-
 private:
     void startAccept();
+
+    inline void run() { m_io_service.run(); };
 
     void onAccept();
 
