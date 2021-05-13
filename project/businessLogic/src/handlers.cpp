@@ -1,0 +1,260 @@
+#include "handlers.h"
+
+#include <iomanip>
+#include <openssl/sha.h>
+#include <string>
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+
+std::string HandlerHelper::sha256(const std::string& str)
+{
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, str.c_str(), str.size());
+    SHA256_Final(hash, &sha256);
+
+    std::stringstream ss;
+
+    for(unsigned char i : hash)
+    {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)i;
+    }
+    return ss.str();
+}
+
+void HandlerHelper::validatePassword(const std::string& password) {
+    if (password.length() < 6 || !std::any_of(password.begin(), password.end(), ::isdigit) || !std::any_of(password.begin(), password.end(), ::isalpha) || !std::none_of(password.begin(), password.end(), ::ispunct) || !std::none_of(password.begin(), password.end(), ::isspace)) {
+        throw InvalidPassword();
+    }
+}
+
+void HandlerHelper::validateLogin(const std::string& login, bool isEmpty) {
+    if (login.length() < 6 || !std::all_of(login.begin(), login.end(), ::isalnum)) {
+        throw InvalidLogin();
+    }
+    if (!isEmpty) {
+        throw LoginExists();
+    }
+}
+
+void HandlerHelper::completeJsonData(JsonData& jsonData, const std::vector<MessagesData>& messages) {
+    std::for_each(messages.begin(), messages.end(), [&jsonData](const MessagesData &message) {
+        MessageData messageData;
+        messageData.transmitterId = message.transmitterId;
+        messageData.receiverId = message.receiverId;
+        messageData.date = message.date;
+        messageData.text = message.text;
+        messageData.contentType = message.contentType;
+        messageData.chatType = message.chatType;
+        messageData.fileName = message.fileName;
+        jsonData.messages.push_back(messageData);
+    });
+}
+
+
+void HandlerHelper::completeUsersData(UsersData& userData, const JsonData& jsonData) {
+    userData.name = jsonData.users[0].name;
+    userData.surname = jsonData.users[0].surname;
+    userData.age = jsonData.users[0].age;
+    userData.login = jsonData.users[0].login;
+    userData.password = sha256(jsonData.users[0].password);
+    userData.updateDate = jsonData.users[0].updateDate;
+    userData.status = jsonData.users[0].status;
+}
+
+void HandlerHelper::completeMessagesData(MessagesData& messageData, const JsonData& jsonData) {
+    messageData.transmitterId = jsonData.messages[0].transmitterId;
+    messageData.receiverId = jsonData.messages[0].receiverId;
+    messageData.date = jsonData.messages[0].date;
+    messageData.chatType = jsonData.messages[0].chatType;
+    messageData.text = jsonData.messages[0].text;
+    messageData.contentType = jsonData.messages[0].contentType;
+    messageData.fileName = jsonData.messages[0].fileName;
+}
+
+bool UserCreatorHandler::canHandle(const JsonData& jsonData) {
+    std::string registration = "registration";
+
+    return (jsonData.requestType == registration);
+}
+
+JsonData UserCreatorHandler::handle(const JsonData& jsonData) {
+    JsonData jsonDataNew = jsonData;
+    try {
+        HandlerHelper::validatePassword(jsonData.users[0].password);
+
+        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        MySQLManager dbManager(details);
+
+        UserTable userTable(dbManager);
+
+        HandlerHelper::validateLogin(jsonData.users[0].login, userTable.SELECT("login", jsonData.users[0].login).empty());
+
+        UsersData userData;
+
+        HandlerHelper::completeUsersData(userData, jsonData);
+
+        userTable.INSERT(userData);
+
+        jsonDataNew.users[0].userId = userTable.SELECT("login", jsonData.users[0].login)[0].userId;
+        jsonDataNew.requestStatus = SUCCESS;
+    }
+    catch (BusinessLogicExceptions& e) {
+        std::cout << e.what() << std::endl;
+        jsonDataNew.requestStatus = FAILED;
+        jsonDataNew.errorDescription = e.errorCode;
+    }
+
+    catch (MySQLDBExceptions& e) {
+        std::cout << e.what() << std::endl;
+        jsonDataNew.requestStatus = FAILED;
+        jsonDataNew.errorDescription = e.errorCode;
+    }
+
+    return jsonDataNew;
+}
+
+bool UserAuthorizerHandler::canHandle(const JsonData& jsonData) {
+    std::string authorization = "authorization";
+
+    return (jsonData.requestType == authorization);
+}
+
+JsonData UserAuthorizerHandler::handle(const JsonData& jsonData) {
+    JsonData jsonDataNew = jsonData;
+    try {
+        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        MySQLManager dbManager(details);
+        UserTable userTable(dbManager);
+        UserData user = jsonData.users[0];
+
+        UsersData userData = userTable.SELECT(user.userId);
+
+        if (user.login != userData.login) {
+            jsonDataNew.requestStatus = FAILED;
+            jsonDataNew.errorDescription = NO_USER_FOUND;
+        }
+        else if (HandlerHelper::sha256(user.password) != userData.password) {
+            jsonDataNew.requestStatus = FAILED;
+            jsonDataNew.errorDescription = INVALID_PASSWORD;
+        } else {
+            jsonDataNew.requestStatus = SUCCESS;
+            MessageTable messageTable(dbManager);
+
+            std::vector<MessagesData> messages = messageTable.selectNewMessages(user.userId, userData.updateDate);
+
+            HandlerHelper::completeJsonData(jsonDataNew, messages);
+
+            std::for_each(jsonDataNew.messages.begin(), jsonDataNew.messages.end(), [](MessageData& message) {
+                if (message.contentType == "audio") {
+                    std::ifstream file("audio/" + message.fileName);
+                    if (file.is_open()) {
+                        file >> message.fileData;
+                    }
+                    file.close();
+                }
+            });
+            if (!messages.empty()) {
+                userTable.UPDATE(messages[messages.size()  - 1].date, user.userId);
+            }
+        }
+    }
+    catch(NoUserFound& e) {
+        std::cout << e.what() << std::endl;
+        jsonDataNew.requestStatus = FAILED;
+    }
+    catch(MySQLDBExceptions& e) {
+        std::cout << e.what() << std::endl;
+        jsonDataNew.requestStatus = FAILED;
+    }
+
+    return jsonDataNew;
+}
+
+bool MessageControllerHandler::canHandle(const JsonData& jsonData) {
+    std::string message = "message";
+
+    return (jsonData.requestType == message);
+}
+
+JsonData MessageControllerHandler::handle(const JsonData& jsonData) {
+    JsonData jsonDataNew = jsonData;
+
+    try {
+        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        MySQLManager dbManager(details);
+
+        MessagesData messageData;
+        HandlerHelper::completeMessagesData(messageData, jsonData);
+
+        MessageTable messageTable(dbManager);
+        messageTable.INSERT(messageData);
+
+        if (jsonData.messages[0].contentType == "audio") {
+            std::string sample = jsonData.messages[0].fileData;
+            std::ofstream file("audio/" + jsonData.messages[0].fileName);
+            if (file.is_open()) {
+                file << sample << std::endl;
+            }
+            file.close();
+        }
+
+        jsonDataNew.requestStatus = SUCCESS;
+    }
+
+    catch(MySQLDBExceptions& e) {
+        std::cout << e.what() << std::endl;
+        jsonDataNew.requestStatus = FAILED;
+    }
+
+    return jsonDataNew;
+}
+
+bool LoadArchiveHandler::canHandle(const JsonData& jsonData) {
+    std::string loadArchive = "loadArchive";
+
+    return (jsonData.requestType == loadArchive);
+}
+
+JsonData LoadArchiveHandler::handle(const JsonData& jsonData) {
+    JsonData jsonDataNew = jsonData;
+
+    try {
+        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        MySQLManager dbManager(details);
+        MessageTable messageTable(dbManager);
+
+        std::vector<MessagesData> messages = messageTable.selectArchiveMessages(jsonData.messages[0].transmitterId,
+                                                                 jsonData.messages[0].receiverId,
+                                                                 jsonData.users[0].updateDate);
+
+        HandlerHelper::completeJsonData(jsonDataNew, messages);
+    }
+    catch(MySQLDBExceptions& e) {
+        std::cout << e.what() << std::endl;
+        jsonDataNew.requestStatus = FAILED;
+    }
+
+    return jsonDataNew;
+}
+
+bool UpdateDateHandler::canHandle(const JsonData& jsonData) {
+    return false;
+}
+
+JsonData UpdateDateHandler::handle(const JsonData &jsonData) {
+    JsonData jsonDataNew = jsonData;
+    try {
+        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        MySQLManager dbManager(details);
+
+        UserTable userTable(dbManager);
+        userTable.UPDATE(jsonData.messages[0].date, jsonData.messages[0].receiverId);
+    }
+    catch (MySQLDBExceptions& e) {
+        std::cout << e.what() << std::endl;
+    }
+    return jsonDataNew;
+}
