@@ -21,11 +21,12 @@ public:
 
 public slots:
     void updateData();
-    void sendData();
+    int sendData();
 
 private:
     JsonData data;
     std::string repeatPasswordStr;
+    ServerConnection serverConnection;
 };
 
 #endif // REGISTRATIONWINDOW_H

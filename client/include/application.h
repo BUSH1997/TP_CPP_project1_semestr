@@ -31,6 +31,7 @@ public:
 
 public slots:
     void signIn();
+    void signUp();
 
 
 };

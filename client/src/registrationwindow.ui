@@ -91,7 +91,7 @@
     <string>Sign Up</string>
    </property>
   </widget>
-  <widget class="QLabel" name="passwordWarningLabel">
+  <widget class="QLabel" name="warningLabel">
    <property name="geometry">
     <rect>
      <x>60</x>

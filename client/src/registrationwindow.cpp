@@ -3,6 +3,11 @@
 
 #include <iostream>
 
+#define CORRECT_DATA 0
+#define CONNECT_ERROR 1
+#define UNCORRECT_DATA 2
+#define UNEQUAL_PASSWORDS 3
+
 RegistrationWindow::RegistrationWindow(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::RegistrationWindow)
@@ -32,7 +37,7 @@ RegistrationWindow::RegistrationWindow(QWidget *parent) :
     ui->passwordLine->setEchoMode(QLineEdit::Password);
     ui->repeatPasswordLine->setEchoMode(QLineEdit::Password);
 
-    ui->passwordWarningLabel->hide();
+    ui->warningLabel->hide();
 
 }
 
@@ -51,18 +56,36 @@ void RegistrationWindow::updateData() {
 
 }
 
-void RegistrationWindow::sendData() {
-    if (data.password != repeatPasswordStr) {
-        ui->passwordWarningLabel->show();
+int RegistrationWindow::sendData() {
+    updateData();
 
-        std::cout << "passwords are not equal" << std::endl;
-        return;
+    if ((data.password == "") || (repeatPasswordStr == "")) {
+        ui->warningLabel->setText("Fill the password fields");
+        return UNEQUAL_PASSWORDS;
     }
 
-    data.status = true;
-    ui->passwordWarningLabel->hide();
+    if (data.password != repeatPasswordStr) {
+        std::cout << "passwords are not equal" << std::endl;
+        return UNEQUAL_PASSWORDS;
+    }
 
-    std::cout << "data was sended" << std::endl;
+    auto dataStr = JsonParser::jsonDataToJson(data);
+    std::string replyStr = "";
+    if (serverConnection.start()) {
+        serverConnection.stop();
+        return CONNECT_ERROR;
+    }
+    replyStr = serverConnection.echoWriteRead(dataStr);
+    serverConnection.stop();
+
+    if (replyStr != dataStr) {
+        std::cout << "message not delivered" << std::endl;
+        return UNCORRECT_DATA;
+    } else {
+        data.status = true;
+        std::cout << "message was sended" << std::endl;
+        return CORRECT_DATA;
+    }
 }
 
 

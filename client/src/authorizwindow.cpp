@@ -44,6 +44,7 @@ void AuthorizWindow::updateData() {
 }
 
 int AuthorizWindow::sendData() {
+    updateData();
     int result;
     auto dataStr = JsonParser::jsonDataToJson(data);
     std::string replyStr = "";
