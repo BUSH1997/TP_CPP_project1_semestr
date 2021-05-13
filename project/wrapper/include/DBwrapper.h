@@ -14,9 +14,9 @@ typedef struct {
     std::size_t userId;
     std::string name;
     std::string surname;
-    std::size_t age;
     std::string login;
     std::string password;
+    std::string avatarName;
     std::string updateDate;
     std::string status;
 } UsersData;

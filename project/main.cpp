@@ -8,17 +8,16 @@
 #include "dbExceptions.h"
 
 int main() {
-   /* std::cout << "Hello, world!" << std::endl;
-    JsonData data;
+  /*  JsonData data;
     data.requestType = "message";
     MessageData message1;
     message1.transmitterId = 3;
-    message1.receiverId = 7;
-    //message1.text = "Technopark is cool";
-    message1.date = "2021-05-13 14:51:00";
+    message1.receiverId = 18;
+  //  message1.text = "Приветствую, Петя!";
+    message1.date = "2021-05-13 17:07:13";
     message1.contentType = "audio";
-    message1.fileName = "3_7_20210513145100";
-    message1.fileData = "01101001000101111100100010001011001001";
+    message1.fileName = "3_18_20210513170713";
+    message1.fileData = "0110101011111110010011001001";
     message1.chatType = "private";
     data.messages.push_back(message1);
 
@@ -46,28 +45,30 @@ int main() {
 
     std::cout << JsonParser::jsonDataToJson(data) << std::endl;*/
    // ss << "{ \"root\": { \"values\": [1, 2, 3, 4, 5 ] } }";
-    /*UserCreatorHandler handler;
+   /* UserCreatorHandler handler;
 
     JsonData data;
     UserData user1;
-    user1.name = "Alex";
-    user1.surname = "Norm";
-    user1.age = 28;
-    user1.login = "alexandr";
-    user1.password = "superman228";
-    user1.updateDate = "2021-05-08 17:14:07";
+    user1.name = "Petya";
+    user1.surname = "Shostak";
+    user1.login = "hohlina";
+    user1.password = "cpp228";
+    user1.updateDate = "2021-05-13 17:04:07";
     user1.status = "active";
+    user1.avatarName = "hohol_20210513170407";
+    user1.avatarData = "0101011110000001001011011111001010";
+    user1.avatarSize = user1.avatarData.size();
 
     data.users.push_back(user1);
 
     JsonData newData = handler.handle(data);
 
-    std::cout << newData.registrationStatus << std::endl;*/
+    std::cout << newData.requestStatus << std::endl;*/
 
     UserData user1;
-    user1.login = "art-stile";
-    user1.password = "art228322";
-    user1.userId = 7;
+    user1.login = "hohlina";
+    user1.password = "cpp228";
+    user1.userId = 18;
     JsonData data;
     data.users.push_back(user1);
 
@@ -133,9 +134,6 @@ int main() {
     }
 
     std::cout << user_by_id.name << std::endl;*/
-
-
-
     return 0;
 }
 

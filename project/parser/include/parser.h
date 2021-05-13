@@ -8,12 +8,14 @@ struct UserData {
 public:
     std::string name;
     std::string surname;
-    std::size_t age = 0;
     std::string login;
     std::string password;
     std::size_t userId = 0;
     std::string updateDate;
     std::string status;
+    std::string avatarName;
+    std::string avatarData;
+    std::size_t avatarSize = 0;
 };
 
 struct MessageData {

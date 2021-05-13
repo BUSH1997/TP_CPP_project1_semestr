@@ -62,7 +62,7 @@ std::vector<MessagesData> MessageTable::fillMessageData(MYSQL_RES* res) {
 
 
 void UserTable::INSERT(const UsersData &userData) {
-std::string ss = "insert into users(name, surname, age, login, password, update_date, status) values('" + userData.name + "', '" + userData.surname + "', '" + std::to_string(userData.age) + "', '" + userData.login +  "', '" + userData.password + "', '" + userData.updateDate + "', '" + userData.status + "');";
+std::string ss = "insert into users(name, surname, login, password, avatar, update_date, status) values('" + userData.name + "', '" + userData.surname + "', '" + userData.login +  "', '" + userData.password + "', '" + userData.avatarName +"', '" + userData.updateDate + "', '" + userData.status + "');";
    mg.executeQuery(ss.c_str());
 }
 
@@ -117,7 +117,7 @@ std::vector<UsersData> UserTable::fillUserData(MYSQL_RES* res) {
     std::vector<UsersData> users;
     while ((row = mysql_fetch_row(res)) != nullptr) {
         UsersData user{static_cast<size_t>(std::stoi(row[0])), row[1], row[2],
-                         static_cast<size_t>(std::stoi(row[3])) , row[4], row[5],  row[6], row[7]};
+                         row[3] , row[4], row[5],  row[6], row[7]};
         users.push_back(user);
     }
     mysql_free_result(res);

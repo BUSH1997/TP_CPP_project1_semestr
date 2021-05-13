@@ -55,17 +55,16 @@ void HandlerHelper::completeJsonData(JsonData& jsonData, const std::vector<Messa
     });
 }
 
-
 void HandlerHelper::completeUsersData(UsersData& userData, const JsonData& jsonData) {
     UserData user = jsonData.users[0];
 
     userData.name = user.name;
     userData.surname = user.surname;
-    userData.age = user.age;
     userData.login = user.login;
     userData.password = sha256(user.password);
     userData.updateDate = user.updateDate;
     userData.status = user.status;
+    userData.avatarName = user.avatarName;
 }
 
 void HandlerHelper::completeMessagesData(MessagesData& messageData, const JsonData& jsonData) {
@@ -105,8 +104,23 @@ JsonData UserCreatorHandler::handle(const JsonData& jsonData) {
         userTable.INSERT(userData);
 
         jsonDataNew.users[0].userId = userTable.SELECT("login", jsonData.users[0].login)[0].userId;
+
+        if (jsonData.users[0].avatarSize != 0) {
+            std::string sample = jsonData.users[0].avatarData;
+            std::ofstream file("../img/" + jsonData.users[0].avatarName);
+            file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            if (file.is_open()) {
+                file << sample << std::endl;
+            }
+            file.close();
+        }
+
         jsonDataNew.requestStatus = SUCCESS;
     }
+    catch (std::ifstream::failure& e) {
+        std::cerr << "Exception opening/reading/closing file\n";
+    }
+
     catch (BusinessLogicExceptions& e) {
         std::cout << e.what() << std::endl;
         jsonDataNew.requestStatus = FAILED;
@@ -140,13 +154,22 @@ JsonData UserAuthorizerHandler::handle(const JsonData& jsonData) {
 
         if (user.login != userData.login) {
             jsonDataNew.requestStatus = FAILED;
-            jsonDataNew.errorDescription = NO_USER_FOUND;
+            jsonDataNew.errorDescription = INVALID_LOGIN;
         }
         else if (HandlerHelper::sha256(user.password) != userData.password) {
             jsonDataNew.requestStatus = FAILED;
             jsonDataNew.errorDescription = INVALID_PASSWORD;
         } else {
             jsonDataNew.requestStatus = SUCCESS;
+            HandlerHelper::completeUsersData(userData, jsonDataNew);
+
+           /* std::ifstream file("../img/" + userData.avatarName);
+            file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            if (file.is_open()) {
+                file >> jsonDataNew.users[0].avatarData;
+            }
+            file.close();*/
+
             MessageTable messageTable(dbManager);
 
             std::vector<MessagesData> messages = messageTable.selectNewMessages(user.userId, userData.updateDate);
@@ -156,6 +179,7 @@ JsonData UserAuthorizerHandler::handle(const JsonData& jsonData) {
             std::for_each(jsonDataNew.messages.begin(), jsonDataNew.messages.end(), [](MessageData& message) {
                 if (message.contentType == "audio") {
                     std::ifstream file("../audio/" + message.fileName);
+                    file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
                     if (file.is_open()) {
                         file >> message.fileData;
                     }
@@ -167,13 +191,20 @@ JsonData UserAuthorizerHandler::handle(const JsonData& jsonData) {
             }
         }
     }
+    catch (std::ifstream::failure& e) {
+        std::cerr << "Exception opening/reading/closing file\n";
+    }
+
     catch(NoUserFound& e) {
         std::cout << e.what() << std::endl;
         jsonDataNew.requestStatus = FAILED;
+        jsonDataNew.errorDescription = NO_USER_FOUND;
     }
+
     catch(MySQLDBExceptions& e) {
         std::cout << e.what() << std::endl;
         jsonDataNew.requestStatus = FAILED;
+        jsonDataNew.errorDescription = e.errorCode;
     }
 
     return jsonDataNew;
@@ -201,6 +232,7 @@ JsonData MessageControllerHandler::handle(const JsonData& jsonData) {
         if (jsonData.messages[0].contentType == "audio") {
             std::string sample = jsonData.messages[0].fileData;
             std::ofstream file("../audio/" + jsonData.messages[0].fileName);
+            file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             if (file.is_open()) {
                 file << sample << std::endl;
             }
@@ -209,10 +241,14 @@ JsonData MessageControllerHandler::handle(const JsonData& jsonData) {
 
         jsonDataNew.requestStatus = SUCCESS;
     }
+    catch (std::ifstream::failure& e) {
+        std::cerr << "Exception opening/reading/closing file\n";
+    }
 
     catch(MySQLDBExceptions& e) {
         std::cout << e.what() << std::endl;
         jsonDataNew.requestStatus = FAILED;
+        jsonDataNew.errorDescription = e.errorCode;
     }
 
     return jsonDataNew;
@@ -241,6 +277,7 @@ JsonData LoadArchiveHandler::handle(const JsonData& jsonData) {
     catch(MySQLDBExceptions& e) {
         std::cout << e.what() << std::endl;
         jsonDataNew.requestStatus = FAILED;
+        jsonDataNew.errorDescription = e.errorCode;
     }
 
     return jsonDataNew;
@@ -261,6 +298,9 @@ JsonData UpdateDateHandler::handle(const JsonData &jsonData) {
     }
     catch (MySQLDBExceptions& e) {
         std::cout << e.what() << std::endl;
+        jsonDataNew.requestStatus = FAILED;
+        jsonDataNew.errorDescription = e.errorCode;
     }
     return jsonDataNew;
 }
+
