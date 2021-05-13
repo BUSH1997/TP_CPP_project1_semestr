@@ -163,12 +163,12 @@ JsonData UserAuthorizerHandler::handle(const JsonData& jsonData) {
             jsonDataNew.requestStatus = SUCCESS;
             HandlerHelper::completeUsersData(userData, jsonDataNew);
 
-           /* std::ifstream file("../img/" + userData.avatarName);
+            std::ifstream file("../img/" + userData.avatarName);
             file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             if (file.is_open()) {
                 file >> jsonDataNew.users[0].avatarData;
             }
-            file.close();*/
+            file.close();
 
             MessageTable messageTable(dbManager);
 
