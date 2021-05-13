@@ -125,10 +125,10 @@ std::vector<UsersData> UserTable::fillUserData(MYSQL_RES* res) {
 }
 
 
-MYSQL* MySQLManager::mysql_connection_setup(struct connection_details mysql_details) {
+MYSQL* MySQLManager::mysql_connection_setup(struct connectionDetails mysqlDetails) {
     MYSQL* connection = mysql_init(nullptr);
 
-    if (!mysql_real_connect(connection, mysql_details.server, mysql_details.user, mysql_details.password, mysql_details.database, 0, nullptr, 0)) {
+    if (!mysql_real_connect(connection, mysqlDetails.server, mysqlDetails.user, mysqlDetails.password, mysqlDetails.database, 0, nullptr, 0)) {
         std::string error = mysql_error(connection);
         throw DBConnectionError(error);
     }
@@ -136,12 +136,12 @@ MYSQL* MySQLManager::mysql_connection_setup(struct connection_details mysql_deta
     return connection;
 }
 
-void MySQLManager::initConnection(struct connection_details mysql_details) {
+void MySQLManager::initConnection(struct connectionDetails mysqlDetails) {
     try {
-        connection_m = mysql_connection_setup(mysql_details);
+        connection_m = mysql_connection_setup(mysqlDetails);
     }
     catch (MySQLDBExceptions& e) {
-        initConnection(mysql_details);
+        initConnection(mysqlDetails);
     }
 }
 

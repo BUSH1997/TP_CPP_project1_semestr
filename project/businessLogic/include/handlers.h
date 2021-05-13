@@ -12,6 +12,10 @@
 #define FAILED 0
 #define SUCCESS 1
 
+#define MIN_PASSWORD_LENGTH 6
+#define MIN_LOGIN_LENGTH 6
+
+
 #define HOST "localhost"
 #define USER "bushcast"
 #define PASSWORD "Sergeykust_333"

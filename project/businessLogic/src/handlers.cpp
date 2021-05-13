@@ -2,7 +2,6 @@
 
 #include <iomanip>
 #include <openssl/sha.h>
-#include <string>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -25,13 +24,16 @@ std::string HandlerHelper::sha256(const std::string& str)
 }
 
 void HandlerHelper::validatePassword(const std::string& password) {
-    if (password.length() < 6 || !std::any_of(password.begin(), password.end(), ::isdigit) || !std::any_of(password.begin(), password.end(), ::isalpha) || !std::none_of(password.begin(), password.end(), ::ispunct) || !std::none_of(password.begin(), password.end(), ::isspace)) {
+    if (password.length() < MIN_PASSWORD_LENGTH || !std::any_of(password.begin(), password.end(), ::isdigit)
+                                                || !std::any_of(password.begin(), password.end(), ::isalpha)
+                                                || !std::none_of(password.begin(), password.end(), ::ispunct)
+                                                || !std::none_of(password.begin(), password.end(), ::isspace)) {
         throw InvalidPassword();
     }
 }
 
 void HandlerHelper::validateLogin(const std::string& login, bool isEmpty) {
-    if (login.length() < 6 || !std::all_of(login.begin(), login.end(), ::isalnum)) {
+    if (login.length() < MIN_LOGIN_LENGTH || !std::all_of(login.begin(), login.end(), ::isalnum)) {
         throw InvalidLogin();
     }
     if (!isEmpty) {
@@ -55,23 +57,27 @@ void HandlerHelper::completeJsonData(JsonData& jsonData, const std::vector<Messa
 
 
 void HandlerHelper::completeUsersData(UsersData& userData, const JsonData& jsonData) {
-    userData.name = jsonData.users[0].name;
-    userData.surname = jsonData.users[0].surname;
-    userData.age = jsonData.users[0].age;
-    userData.login = jsonData.users[0].login;
-    userData.password = sha256(jsonData.users[0].password);
-    userData.updateDate = jsonData.users[0].updateDate;
-    userData.status = jsonData.users[0].status;
+    UserData user = jsonData.users[0];
+
+    userData.name = user.name;
+    userData.surname = user.surname;
+    userData.age = user.age;
+    userData.login = user.login;
+    userData.password = sha256(user.password);
+    userData.updateDate = user.updateDate;
+    userData.status = user.status;
 }
 
 void HandlerHelper::completeMessagesData(MessagesData& messageData, const JsonData& jsonData) {
-    messageData.transmitterId = jsonData.messages[0].transmitterId;
-    messageData.receiverId = jsonData.messages[0].receiverId;
-    messageData.date = jsonData.messages[0].date;
-    messageData.chatType = jsonData.messages[0].chatType;
-    messageData.text = jsonData.messages[0].text;
-    messageData.contentType = jsonData.messages[0].contentType;
-    messageData.fileName = jsonData.messages[0].fileName;
+    MessageData message = jsonData.messages[0];
+
+    messageData.transmitterId = message.transmitterId;
+    messageData.receiverId = message.receiverId;
+    messageData.date = message.date;
+    messageData.chatType = message.chatType;
+    messageData.text = message.text;
+    messageData.contentType = message.contentType;
+    messageData.fileName = message.fileName;
 }
 
 bool UserCreatorHandler::canHandle(const JsonData& jsonData) {
@@ -85,7 +91,7 @@ JsonData UserCreatorHandler::handle(const JsonData& jsonData) {
     try {
         HandlerHelper::validatePassword(jsonData.users[0].password);
 
-        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        connectionDetails details{HOST, USER, PASSWORD, DATABASE};
         MySQLManager dbManager(details);
 
         UserTable userTable(dbManager);
@@ -125,7 +131,7 @@ bool UserAuthorizerHandler::canHandle(const JsonData& jsonData) {
 JsonData UserAuthorizerHandler::handle(const JsonData& jsonData) {
     JsonData jsonDataNew = jsonData;
     try {
-        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        connectionDetails details{HOST, USER, PASSWORD, DATABASE};
         MySQLManager dbManager(details);
         UserTable userTable(dbManager);
         UserData user = jsonData.users[0];
@@ -149,7 +155,7 @@ JsonData UserAuthorizerHandler::handle(const JsonData& jsonData) {
 
             std::for_each(jsonDataNew.messages.begin(), jsonDataNew.messages.end(), [](MessageData& message) {
                 if (message.contentType == "audio") {
-                    std::ifstream file("audio/" + message.fileName);
+                    std::ifstream file("../audio/" + message.fileName);
                     if (file.is_open()) {
                         file >> message.fileData;
                     }
@@ -183,7 +189,7 @@ JsonData MessageControllerHandler::handle(const JsonData& jsonData) {
     JsonData jsonDataNew = jsonData;
 
     try {
-        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        connectionDetails details{HOST, USER, PASSWORD, DATABASE};
         MySQLManager dbManager(details);
 
         MessagesData messageData;
@@ -194,7 +200,7 @@ JsonData MessageControllerHandler::handle(const JsonData& jsonData) {
 
         if (jsonData.messages[0].contentType == "audio") {
             std::string sample = jsonData.messages[0].fileData;
-            std::ofstream file("audio/" + jsonData.messages[0].fileName);
+            std::ofstream file("../audio/" + jsonData.messages[0].fileName);
             if (file.is_open()) {
                 file << sample << std::endl;
             }
@@ -222,7 +228,7 @@ JsonData LoadArchiveHandler::handle(const JsonData& jsonData) {
     JsonData jsonDataNew = jsonData;
 
     try {
-        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        connectionDetails details{HOST, USER, PASSWORD, DATABASE};
         MySQLManager dbManager(details);
         MessageTable messageTable(dbManager);
 
@@ -247,7 +253,7 @@ bool UpdateDateHandler::canHandle(const JsonData& jsonData) {
 JsonData UpdateDateHandler::handle(const JsonData &jsonData) {
     JsonData jsonDataNew = jsonData;
     try {
-        connection_details details{HOST, USER, PASSWORD, DATABASE};
+        connectionDetails details{HOST, USER, PASSWORD, DATABASE};
         MySQLManager dbManager(details);
 
         UserTable userTable(dbManager);

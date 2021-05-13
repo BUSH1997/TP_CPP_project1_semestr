@@ -3,11 +3,10 @@
 
 #include <mysql/mysql.h>
 #include <string>
-#include <utility>
 #include <vector>
 #include <exception>
 
-struct connection_details {
+struct connectionDetails {
     const char* server, *user, *password, *database;
 };
 
@@ -36,7 +35,7 @@ typedef struct {
 
 class dbManager {
 public:
-    virtual void initConnection(struct connection_details mysql_details) = 0;
+    virtual void initConnection(struct connectionDetails mysqlDetails) = 0;
     virtual void closeConnection() = 0;
 
 private:
@@ -47,9 +46,9 @@ private:
 class MySQLManager : dbManager {
 public:
     MySQLManager() = default;
-    explicit MySQLManager(struct connection_details mysql_details) : connection_m(mysql_connection_setup(mysql_details)) {}
+    explicit MySQLManager(struct connectionDetails mysqlDetails) : connection_m(mysql_connection_setup(mysqlDetails)) {}
 
-    void initConnection(struct connection_details mysql_details) override;
+    void initConnection(struct connectionDetails mysqlDetails) override;
 
     void executeQuery(const char* sqlQuery) override;
 
@@ -60,7 +59,7 @@ public:
     MYSQL* connection_m;
 
 private:
-    static MYSQL* mysql_connection_setup(struct connection_details);
+    static MYSQL* mysql_connection_setup(struct connectionDetails);
     void closeConnection() override;
 };
 
@@ -95,3 +94,4 @@ private:
 };
 
 #endif //TEST_DB3_DBWRAPPER_H
+

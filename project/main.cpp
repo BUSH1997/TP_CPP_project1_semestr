@@ -8,17 +8,17 @@
 #include "dbExceptions.h"
 
 int main() {
-    /*std::cout << "Hello, world!" << std::endl;
+   /* std::cout << "Hello, world!" << std::endl;
     JsonData data;
     data.requestType = "message";
     MessageData message1;
     message1.transmitterId = 3;
     message1.receiverId = 7;
-    message1.text = "Technopark is cool";
-    message1.date = "2021-05-13 13:31:00";
-    message1.contentType = "text";
- //   message1.fileName = "20210513125107";
-   // message1.fileData = "011010010001010100010010011001001";
+    //message1.text = "Technopark is cool";
+    message1.date = "2021-05-13 14:51:00";
+    message1.contentType = "audio";
+    message1.fileName = "3_7_20210513145100";
+    message1.fileData = "01101001000101111100100010001011001001";
     message1.chatType = "private";
     data.messages.push_back(message1);
 
