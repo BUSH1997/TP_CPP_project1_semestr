@@ -5,6 +5,8 @@
 #include <boost/asio.hpp>
 #include <iostream>
 
+#include <QFile>
+
 using boost::asio::ip::tcp;
 
 class ServerConnection: public boost::noncopyable {
@@ -34,57 +36,89 @@ public:
             return "";
         }
 
+        char request[maxLength];
+        std::copy(message.begin(), message.end(), request);
+        size_t request_length = std::strlen(request);
+        boost::asio::write(s, boost::asio::buffer(request, request_length));
 
-            char request[maxLength];
-            std::copy(message.begin(), message.end(), request);
-            size_t request_length = std::strlen(request);
-//            std::cout << request_length << std::endl;
-            boost::asio::write(s, boost::asio::buffer(request, request_length));
+        char reply[maxLength];
+        size_t reply_length = boost::asio::read(s,
+            boost::asio::buffer(reply, request_length));
+        std::cout << std::endl;
 
-            char reply[maxLength];
-            size_t reply_length = boost::asio::read(s,
-                boost::asio::buffer(reply, request_length));
-//            std::cout << "Reply is: ";
-//            std::cout.write(reply, request_length);
-            std::cout << std::endl;
-
-            return std::string(reply, message.length());
+        return std::string(reply, message.length());
     }
 
+    std::string echoWriteReadFile(std::string size, std::string fileStr) {
+        char buff[maxLength];
+        std::copy(size.begin(), size.end(), buff);
+        size_t buffLength = std::strlen(buff);
+        boost::asio::write(s, boost::asio::buffer(buff, buffLength));
+
+        char reply[maxLength];
+        size_t replyLength = boost::asio::read(s,
+            boost::asio::buffer(reply, buffLength));
+        std::cout << std::endl;
+
+        auto fileSize = std::stoll(size);
+        char fileBuff[fileSize];
+        std::copy(fileStr.begin(), fileStr.end(), fileBuff);
+        boost::asio::write(s, boost::asio::buffer(fileBuff, fileSize));
+
+        char fileReply[fileSize];
+        size_t fileReplyLength = boost::asio::read(s,
+            boost::asio::buffer(fileReply, fileSize));
+
+        QFile r("audio/temp");
+        r.open(QIODevice::WriteOnly);
+        r.write(fileReply, fileSize);
+        r.close();
+
+        return std::string(fileReply, fileSize);
+    }
+
+
+    void writeFile(std::string size, std::string fileStr) {
+        char buff[maxLength];
+        std::copy(size.begin(), size.end(), buff);
+        size_t buffLength = std::strlen(buff);
+        boost::asio::write(s, boost::asio::buffer(buff, buffLength));
+
+        char reply[maxLength];
+        size_t replyLength = boost::asio::read(s,
+            boost::asio::buffer(reply, buffLength));
+        std::cout << std::endl;
+
+        auto fileSize = std::stoll(size);
+        char fileBuff[fileSize];
+        std::copy(fileStr.begin(), fileStr.end(), fileBuff);
+        boost::asio::write(s, boost::asio::buffer(fileBuff, fileSize));
+
+        char fileReply[fileSize];
+        size_t fileReplyLength = boost::asio::read(s,
+            boost::asio::buffer(fileReply, fileSize));
+
+        QFile r("temp");
+        r.open(QIODevice::WriteOnly);
+        r.write(fileReply, fileSize);
+        r.close();
+    }
+
+
+
     void write() {
-            boost::asio::connect(s, resolver.resolve({ip, port}));
+        boost::asio::connect(s, resolver.resolve({ip, port}));
 
-            std::cout << "Enter message: ";
-            char request[maxLength];
-            std::string message = "safdaf";
-            std::copy(message.begin(), message.end(), request);
-            request_length = std::strlen(request);
-            boost::asio::write(s, boost::asio::buffer(request, request_length));
+        std::cout << "Enter message: ";
+        char request[maxLength];
+        std::string message = "safdaf";
+        std::copy(message.begin(), message.end(), request);
+        request_length = std::strlen(request);
+        boost::asio::write(s, boost::asio::buffer(request, request_length));
 
-//            char reply[maxLength];
-//            size_t reply_length = boost::asio::read(s,
-//                boost::asio::buffer(reply, request_length));
-//            std::cout << "Reply is: ";
-//            std::cout.write(reply, reply_length);
-//            std::cout << std::endl;
-
-
-//        s.close();
     }
 
     void read() {
-////        start();
-
-
-////        char reply[maxLength];
-////        size_t reply_length = boost::asio::read(s,
-////            boost::asio::buffer(reply, request_length));
-////        std::cout << reply << std::endl;
-
-//        if (s.available() == 0) {
-//            std::cout << "nothing to read" << std::endl;
-//            return;
-//        }
 
         char reply[maxLength];
         size_t reply_length = boost::asio::read(s,
@@ -113,7 +147,6 @@ public:
         }
         s.close();
     }
-
 };
 
 

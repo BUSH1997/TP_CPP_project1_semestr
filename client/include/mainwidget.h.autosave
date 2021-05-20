@@ -266,8 +266,6 @@ public:
     ~MainWidget();
 
     void makeContactList();
-
-//    void writeSessionInformation();
     void readSessionInformation(JsonData data);
 
     void sendFile(const std::string& filePath);

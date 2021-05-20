@@ -45,6 +45,9 @@ set(PROJECT_SOURCES
         ./src/registrationwindow.cpp
         ./src/registrationwindow.ui
 
+        ./include/newdialogwidget.h
+        ./src/newdialogwidget.cpp
+
         ./include/serverConnection.h
 
         ./include/application.h

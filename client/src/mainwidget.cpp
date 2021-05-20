@@ -8,11 +8,15 @@ MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
     QDir cacheDir;
     cacheDir.mkdir("cache");
 
-    readSessionInformation();
+    newDialogWidget = std::make_unique<NewDialogWidget>();
+    connect(newDialogWidget.get()->signal.get(), SIGNAL(textChanged(QString)),
+            this, SLOT(createNewDialog(QString)));
 
     dialogMessagePtr = std::make_unique<DialogMessagePtr>();
 
-    resize(1366, 768);
+    auto screenGeometry = QGuiApplication::screens().first()->availableGeometry();
+    resize(screenGeometry.width(), screenGeometry.height());
+    setWindowTitle("YAMessanger");
 
     mainWindowLayoutWidget = std::make_unique<QWidget>(this);
 
@@ -30,6 +34,7 @@ MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
 
     contactsLabel = std::make_unique<QLabel>(rightBoardWidget.get());
     rightBoardLayout->addWidget(contactsLabel.get(), 1);
+    contactsLabel->setText("Contacts: ");
 
 //    ------------------------------
     testFooButton = std::make_unique<QPushButton>(rightBoardWidget.get());
@@ -40,9 +45,14 @@ MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
     contactListWidget = std::make_unique<QListWidget>();
     rightBoardLayout->addWidget(contactListWidget.get(), 20);
 
-    contactList = std::make_unique<ContactListClass>();
+    contactList = std::make_unique<ContactListClass>(sessionInformation);
     connect(contactListWidget.get(), SIGNAL(itemClicked(QListWidgetItem*)),
-            this, SLOT(slotMakeDialog(QListWidgetItem*)));
+            this, SLOT(makeDialog(QListWidgetItem*)));
+
+    addContactButton = std::make_unique<QPushButton>(rightBoardWidget.get());
+    rightBoardLayout->addWidget(addContactButton.get(), 2);
+    addContactButton->setText("Add contact");
+    connect(addContactButton.get(), SIGNAL(clicked()), this, SLOT(addContact()));
 
 //    ------------------------------
     leftBoardLayout = std::make_unique<QVBoxLayout>();
@@ -52,60 +62,8 @@ MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
     leftBoardLayout->addWidget(dialogWidget.get(), 7);
     dialogWidget->setSelectionMode(QAbstractItemView::NoSelection);
 
-//    ---------------------
-    dialogMap = std::make_unique<DialogMapClass>();
+    dialogMap = std::make_unique<DialogMapClass>(sessionInformation);
 
-{
-    for (int i = 0; i < 3; i++) {
-        JsonData data;
-        data.transmitterId = 0;
-
-        data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + std::chrono::hours(i)));
-
-        data.text = "message #";
-        data.text.append(std::to_string(i));
-        data.name = "contact #";
-        data.name.append(std::to_string(0));
-        data.receiverId = 7815;
-
-        dialogMap->addMessage(data);
-        contactList->add(data);
-
-    }
-
-    for (int i = 0; i < 3; i++) {
-        JsonData data;
-        data.transmitterId = 4;
-
-        data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + std::chrono::hours(i)));
-
-        data.text = "message #";
-        data.text.append(std::to_string(i));
-        data.name = "contact #";
-        data.name.append(std::to_string(4));
-        data.receiverId = 7815;
-
-        dialogMap->addMessage(data);
-        contactList->add(data);
-    }
-
-
-    JsonData data;
-    data.transmitterId = 101;
-
-    data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() - std::chrono::hours(8)));
-
-    data.text = "message #";
-    data.text.append(std::to_string(10));
-    data.name = "contact #";
-    data.name.append(std::to_string(101));
-    data.receiverId = 7815;
-
-    dialogMap->addMessage(data);
-    contactList->add(data);
-}
-
-    makeContactList();
 
 //====================================
 
@@ -160,10 +118,9 @@ int& MainWidget::dialogId(JsonData& data) {
     return data.transmitterId;
 }
 
+
 void MainWidget::makeContactList() {
     for (auto it = contactList->list.begin(); it != contactList->list.end(); ++it) {
-
-//        dialogMap->contactWidget[it->transmitterId] = std::make_unique<ContactWidget>(*it, contactListWidget.get());
         dialogMap->contactWidget[dialogId(*it)] = std::make_unique<ContactWidget>(*it, contactListWidget.get());
     }
 }
@@ -197,14 +154,11 @@ void MainWidget::addMessageToDialog(JsonData& message) {
     dialogMessagePtr->add(messageItem);
 
     dialogWidget->scrollToBottom();
-//    dialogMap->contactWidget[dialogId(message)]->update(message);
-
 }
 
 
 void MainWidget::addVoiceMessageToDialog(JsonData& message) {
     std::string str;
-
     str.append("transmitterId #");
     str.append(std::to_string(message.transmitterId));
     str.append(" <");
@@ -222,13 +176,16 @@ void MainWidget::addVoiceMessageToDialog(JsonData& message) {
     dialogMessagePtr->add(messageItem);
     QWidget* messageWidget = new QWidget(dialogWidget.get());
     dialogMessagePtr->add(messageWidget);
-    QHBoxLayout* messageLayout = new QHBoxLayout;
+    QHBoxLayout* messageLayout = new QHBoxLayout(messageWidget);
     dialogMessagePtr->add(messageLayout);
     messageWidget->setLayout(messageLayout);
     messageLayout->setMargin(0);
 
+    QWidget* leftSpacer = new QWidget(dialogWidget.get());
+    dialogMessagePtr->add(leftSpacer);
+    messageLayout->addWidget(leftSpacer, 7);
 
-    QLabel* label = new QLabel(QString::fromStdString(str));
+    QLabel* label = new QLabel(QString::fromStdString(str), dialogWidget.get());
     dialogMessagePtr->add(label);
     messageLayout->addWidget(label, 2);
     PlayButton* playButton = new PlayButton(dialogWidget.get());
@@ -251,9 +208,16 @@ void MainWidget::addVoiceMessageToDialog(JsonData& message) {
 
     messageItem->setSizeHint(messageWidget->sizeHint());
     dialogWidget->setItemWidget(messageItem, messageWidget);
-    QWidget* spacer = new QWidget(dialogWidget.get());
-    dialogMessagePtr->add(spacer);
-    messageLayout->addWidget(spacer, 7);
+
+    QWidget* rightSpacer = new QWidget(dialogWidget.get());
+    dialogMessagePtr->add(rightSpacer);
+    messageLayout->addWidget(rightSpacer, 7);
+
+    if (dialogId(selectedContact->back()) == message.receiverId) {
+        rightSpacer->hide();
+    } else {
+        leftSpacer->hide();
+    }
 
     connect(playButton, SIGNAL(clicked()), playButton, SLOT(hide()));
     connect(playButton, SIGNAL(clicked()), stopButton, SLOT(show()));
@@ -261,11 +225,10 @@ void MainWidget::addVoiceMessageToDialog(JsonData& message) {
 
     connect(stopButton, SIGNAL(clicked()), stopButton, SLOT(hide()));
     connect(stopButton, SIGNAL(clicked()), playButton, SLOT(show()));
-
 }
 
 
-void MainWidget::slotMakeDialog(QListWidgetItem* item) {
+void MainWidget::makeDialog(QListWidgetItem* item) {
     dialogMessagePtr->clear();
     bottomBoardWidget->show();
     dialogWidget->clear();
@@ -277,7 +240,8 @@ void MainWidget::slotMakeDialog(QListWidgetItem* item) {
     auto it = contactList->list.begin();
     for (int i = 0; i < j; ++it, ++i);
 
-    selectedContact = &dialogMap->map[it->transmitterId];
+    selectedContact = &dialogMap->map[dialogId(*it)];
+
     if (selectedContact->empty()) {
         return;
     }
@@ -289,6 +253,9 @@ void MainWidget::slotMakeDialog(QListWidgetItem* item) {
         if (it.contentType == "audio") {
             addVoiceMessageToDialog(it);
         } else {
+            if (it.text.empty()) {
+                continue;
+            }
             addMessageToDialog(it);
         }
     }
@@ -299,21 +266,19 @@ void MainWidget::sendMessage() {
     if (messageTextBrowser->toPlainText().isEmpty()) {
         return;
     }
-
-
     JsonData message;
     message.transmitterId = sessionInformation.userId;
-    message.receiverId = selectedContact->begin()->userId;
+    message.receiverId = dialogId(selectedContact->back());
     message.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
     message.text = messageTextBrowser->toPlainText().toUtf8().constData();
-
     sendMessage(message);
 }
 
 
 void MainWidget::sendMessage(JsonData& message) {
     message.transmitterId = sessionInformation.userId;
-//    //!!!
+    message.receiverId = dialogId(selectedContact->back());
+    message.name = selectedContact->back().name;
 
     auto messageStr = JsonParser::jsonDataToJson(message);
 
@@ -340,14 +305,63 @@ void MainWidget::sendMessage(JsonData& message) {
 
     addMessageToDialog(message);
     messageTextBrowser->clear();
+
+    for (auto &it: dialogMap->contactWidget) {
+        it.second->update(dialogMap->map[it.first].back());
+    }
 }
 
 
 void MainWidget::sendFile(const std::string& filePath) {
+    QFile f(QString::fromStdString(filePath));
+    if (!f.open(QIODevice::ReadOnly)) {
+        return;
+    }
 
-//    serverConnection.start();
-//    serverConnection.sendFile(filePath);
-//    serverConnection.stop();
+    if (serverConnection.start()) {
+        serverConnection.stop();
+        std::cout << "connection error" << std::endl;
+        return;
+    }
+
+    std::cout << std::to_string(f.size()) << std::endl;
+
+    std::string fileStr(f.read(f.size()).constData(), f.size());
+
+    std::string receiveFileStr =
+        serverConnection.echoWriteReadFile(std::to_string(f.size()), fileStr);
+
+    serverConnection.stop();
+    f.close();
+}
+
+
+void MainWidget::receiveAudio(JsonData data) {
+    QFile f(QString::fromStdString("testAudio"));
+    if (!f.open(QIODevice::ReadOnly)) {
+        return;
+    }
+
+    if (serverConnection.start()) {
+        serverConnection.stop();
+        std::cout << "connection error" << std::endl;
+        return;
+    }
+
+    std::cout << std::to_string(f.size()) << std::endl;
+
+    std::string fileStr(f.read(f.size()).constData(), f.size());
+
+    std::string receiveFileStr =
+        serverConnection.echoWriteReadFile(std::to_string(f.size()), fileStr);
+    serverConnection.stop();
+    f.close();
+
+//-----------------------
+    QFile r("audio/temp");
+    QString temp = "audio/" + QString::fromStdString(data.text);
+    r.rename(temp);
+    r.close();
 }
 
 
@@ -363,7 +377,6 @@ void MainWidget::keyPressEvent(QKeyEvent *e) {
         dialogWidget->clear();
         return;
     }
-    MainWidget::keyPressEvent(e);
 }
 
 
@@ -385,7 +398,7 @@ void MainWidget::recordAudio() {
     std::cout << "record audio" << std::endl;
 
     disconnect(contactListWidget.get(), SIGNAL(itemClicked(QListWidgetItem*)),
-               this, SLOT(slotMakeDialog(QListWidgetItem*)));
+               this, SLOT(makeDialog(QListWidgetItem*)));
 
     contactListWidget->setEnabled(false);
     recordThread("audio/1.wav").record();
@@ -396,17 +409,19 @@ void MainWidget::stopRecordAudio() {
     recordThread.stop();
 
     connect(contactListWidget.get(), SIGNAL(itemClicked(QListWidgetItem*)),
-            this, SLOT(slotMakeDialog(QListWidgetItem*)));
+            this, SLOT(makeDialog(QListWidgetItem*)));
     contactListWidget->setEnabled(true);
 
     JsonData data;
     data.userId = sessionInformation.userId;
+    data.transmitterId = sessionInformation.userId;
+    data.receiverId = dialogId(selectedContact->back());
     data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
     data.contentType = "audio";
     data.text = "";
     data.text.append(std::to_string(data.userId));
     data.text.append(" -> ");
-    data.text.append(std::to_string(selectedContact->begin()->userId));
+    data.text.append(std::to_string(dialogId(selectedContact->back())));
     data.text.append("|");
 
     auto t = std::time_t(std::stol(data.date));
@@ -419,6 +434,7 @@ void MainWidget::stopRecordAudio() {
     QFile f("audio/1.wav");
     QString temp = "audio/" + QString::fromStdString(data.text);
     f.rename(temp);
+    f.close();
 
     sendMessage(data);
     sendFile(temp.toStdString());
@@ -440,7 +456,7 @@ void MainWidget::play() {
     }
 
     disconnect(contactListWidget.get(), SIGNAL(itemClicked(QListWidgetItem*)),
-               this, SLOT(slotMakeDialog(QListWidgetItem*)));
+               this, SLOT(makeDialog(QListWidgetItem*)));
 
     contactListWidget->setEnabled(false);
     soundThread(QString::fromStdString(fileName)).start();
@@ -459,7 +475,7 @@ void MainWidget::stop() {
     }
 
     connect(contactListWidget.get(), SIGNAL(itemClicked(QListWidgetItem*)),
-            this, SLOT(slotMakeDialog(QListWidgetItem*)));
+            this, SLOT(makeDialog(QListWidgetItem*)));
 
     contactListWidget->setEnabled(true);
     soundThread.stop();
@@ -478,14 +494,26 @@ void MainWidget::receiveMessage(std::string& messageStr) {
     auto reply = JsonParser::jsonToJsonData(replyStr);
 
     dialogMap->addMessage(reply);
+    if (reply.contentType == "audio") {
+        receiveAudio(reply);
+    }
+
+    std::cout << "bruh" << std::endl;
 
     auto selectedItems = contactListWidget->selectedItems();
     int idx = 0;
+
     if (!selectedItems.isEmpty()) {
         while (contactListWidget.get()->item(idx) != selectedItems.first()) {
             idx++;
         }
     }
+
+    auto temp = contactList->list.begin();
+    for (int j = 0; j < idx; ++j) {
+        ++temp;
+    }
+    int dialogId = temp->transmitterId;
 
     contactList->add(reply);
     dialogMap->clearContactWidget();
@@ -493,40 +521,207 @@ void MainWidget::receiveMessage(std::string& messageStr) {
     makeContactList();
 
     if (!selectedItems.isEmpty()) {
-        auto temp = contactListWidget.get()->item(idx);
+        int k = 0;
+        for (auto &it: contactList->list) {
+            if (it.transmitterId == dialogId) {
+                break;
+            }
+            ++k;
+        }
+        auto temp = contactListWidget.get()->item(k);
         temp ->setSelected(true);
-        slotMakeDialog(temp);
+        makeDialog(temp);
+    }
+
+    for (auto &it: dialogMap->contactWidget) {
+        it.second->update(dialogMap->map[it.first].back());
     }
 }
 
 
 void MainWidget::testSlot() {
-    std::cout << "socket read" << std::endl;
+    std::cout << "testSlot" << std::endl;
 
-    static int i = 0;
-    JsonData message;
-    message.transmitterId = 7;
-    message.name = "contact #" + std::to_string(message.transmitterId);
-    message.receiverId = sessionInformation.userId;
-    message.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
-    message.text = "reply message #" + std::to_string(i++);
-    std::string messageStr = JsonParser::jsonDataToJson(message);
+//    addContact();
+//    return;
 
-    receiveMessage(messageStr);
+//    --------------------
 
-    return;
+//    JsonData data;
+//    data.transmitterId = 7555;
 
+//    data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+
+//    data.text = "message #";
+//    data.text.append(std::to_string(23));
+//    data.name = "contact #";
+//    data.name.append(std::to_string(7555));
+//    data.receiverId = 7815;
+
+//    auto temp = JsonParser::jsonDataToJson(data);
+//    receiveMessage(temp);
+
+//    --------------------
+
+//    writeCache(*dialogMap);
+
+//    ----------------------------
+
+//    sendFile("123");
+
+        JsonData data;
+        data.userId = 213;
+        data.receiverId = sessionInformation.userId;
+        data.transmitterId = 213;
+        data.name = "contact #" + std::to_string(data.userId);
+        data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+        data.contentType = "audio";
+        data.text = "";
+        data.text.append(std::to_string(data.userId));
+        data.text.append(" -> ");
+        data.text.append(std::to_string(sessionInformation.userId));
+        data.text.append("|");
+
+        auto t = std::time_t(std::stol(data.date));
+        char timestr[100];
+        std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+
+        data.text.append(timestr);
+        data.text.append(".wav");
+
+        auto temp = JsonParser::jsonDataToJson(data);
+        receiveMessage(temp);
 }
 
 
-void MainWidget::readSessionInformation() {
-    QFile f("cache/sessionInformation");
+void MainWidget::addContact() {
+    selectedContact = nullptr;
+    contactListWidget->clearSelection();
+
+    dialogMessagePtr->clear();
+    messageTextBrowser->clear();
+
+    bottomBoardWidget->hide();
+    dialogWidget->clear();
+
+    newDialogWidget->show();
+}
+
+
+void MainWidget::createNewDialog(QString text) {
+    std::cout << "createNewDialog" << std::endl;
+
+    newDialogWidget->readSessionInformation(sessionInformation);
+
+    dialogMessagePtr->clear();
+    bottomBoardWidget->show();
+    dialogWidget->clear();
+
+    auto temp = JsonParser::jsonToJsonData(text.toStdString());
+
+    int j = 0;
+    for (auto &it: contactList.get()->list) {
+        if (dialogId(it) == dialogId(temp)) {
+            contactListWidget.get()->item(j)->setSelected(true);
+            makeDialog(contactListWidget.get()->item(j));
+            messageTextBrowser->setFocus();
+            return;
+        }
+        j++;
+    }
+
+    dialogMap->addMessage(temp);
+    selectedContact = &dialogMap->map[dialogId(temp)];
+
+    contactList->add(temp);
+    dialogMap->clearContactWidget();
+    contactListWidget->clear();
+    makeContactList();
+
+    for (auto &it: dialogMap->contactWidget) {
+        it.second->update(dialogMap->map[it.first].back());
+    }
+
+    int idx = 0;
+    for (auto &it: contactList.get()->list) {
+        if (dialogId(it) == dialogId(temp))
+            break;
+        idx++;
+    }
+    contactListWidget.get()->item(idx)->setSelected(true);
+    messageTextBrowser->setFocus();
+}
+
+
+void MainWidget::writeCache(DialogMapClass &dialogMap) {
+    QDir dir("cache/archive");
+    QFile f(dir.path() + "/" + QString::fromStdString(sessionInformation.login));
+    if (!f.open(QIODevice::WriteOnly)) {
+        return;
+    }
+    for (auto &mit: dialogMap.map) {
+        for (auto &dit: mit.second) {
+            auto temp = JsonParser::jsonDataToJson(dit);
+            QByteArray byteArray(temp.c_str(), temp.length());
+            f.write(byteArray);
+        }
+    }
+    f.close();
+}
+
+
+void MainWidget::readCache() {
+    dialogMap->readSessionInformation(sessionInformation);
+
+    QDir dir("cache/archive");
+    QFile f(dir.path() + "/" + QString::fromStdString(sessionInformation.login));
     if (!f.open(QIODevice::ReadOnly)) {
         return;
     }
-    QByteArray byteArray = f.read(1024);
 
-    sessionInformation = JsonParser::jsonToJsonData(byteArray.toStdString());
+    QByteArray byteArray = f.read(1048576);
+    f.close();
+
+    std::string str(byteArray.constData(), byteArray.length());
+    while (true) {
+        auto l = str.find('{');
+        auto r = str.find('}') + 1;
+
+        if (l == std::string::npos)
+            break;
+
+        std::string temp(str, l, r);
+        JsonData data = JsonParser::jsonToJsonData(temp);
+
+        dialogMap->addMessage(data);
+        contactList->add(data);
+
+        str = std::string(str, r + 1);
+    }
+
+    makeContactList();
+    for (auto &it: dialogMap->contactWidget) {
+        it.second->update(dialogMap->map[it.first].back());
+    }
+
+    for (auto &it: contactList->list) {
+        std::cout << it.transmitterId << " " << it.receiverId << ": " << it.text << std::endl;
+    }
+}
+
+
+void MainWidget::readSessionInformation(JsonData data) {
+    sessionInformation = data;
+}
+
+
+void MainWidget::closeEvent(QCloseEvent*) {
+    QFile f("cache/archive/" + QString::fromStdString(sessionInformation.login));
+    f.remove();
+    writeCache(*dialogMap);
+
+    newDialogWidget->close();
+    this->close();
 }
 
 

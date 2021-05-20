@@ -1,7 +1,6 @@
 #include "contactWidget.h"
 
 ContactWidget::ContactWidget(JsonData data, QListWidget* parent) {
-
     contactWidget = std::make_unique<QWidget>(parent);
     contactLayout = std::make_unique<QHBoxLayout>(contactWidget.get());
     contactWidget->setLayout(contactLayout.get());
@@ -52,16 +51,13 @@ ContactWidget::ContactWidget(JsonData data, QListWidget* parent) {
     parent->setItemWidget(item.get(), contactWidget.get());
 }
 
-#include <iostream>
+
 void ContactWidget::update(JsonData data) {
     auto t = std::time_t(std::stol(data.date));
     char timestr[100];
     std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
-//    std::cout << timeLabel.get() << std::endl;
     timeLabel->setText(QString::fromStdString(timestr));
 
     prewMessageLabel->setText(QString::fromStdString(data.text));
-
-//    std::cout << "update contactWidget" << std::endl;
 }
 

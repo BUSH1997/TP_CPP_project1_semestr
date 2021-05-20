@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>508</width>
-    <height>358</height>
+    <width>520</width>
+    <height>350</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -127,6 +127,14 @@
    </property>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>nameLine</tabstop>
+  <tabstop>loginLine</tabstop>
+  <tabstop>passwordLine</tabstop>
+  <tabstop>repeatPasswordLine</tabstop>
+  <tabstop>signUpButton</tabstop>
+  <tabstop>signInButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

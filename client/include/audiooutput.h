@@ -28,8 +28,6 @@ public:
 
     void start();
     void stop();
-
-    void test();
 };
 
 #endif // AUDIOOUTPUT_H

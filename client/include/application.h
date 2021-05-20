@@ -33,7 +33,8 @@ public slots:
     void signIn();
     void signUp();
 
-
+    void registration();
+    void authorization();
 };
 
 #endif // APPLICATION_H

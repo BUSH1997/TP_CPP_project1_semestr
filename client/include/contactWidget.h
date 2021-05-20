@@ -36,5 +36,4 @@ public:
     void update(JsonData data);
 };
 
-
 #endif // CONTACTWIDGET_H

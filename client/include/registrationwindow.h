@@ -2,6 +2,7 @@
 #define REGISTRATIONWINDOW_H
 
 #include <QWidget>
+#include <QKeyEvent>
 #include "Parser.h"
 #include "serverConnection.h"
 
@@ -18,6 +19,10 @@ public:
 
     explicit RegistrationWindow(QWidget *parent = nullptr);
     ~RegistrationWindow();
+
+protected:
+    void keyPressEvent(QKeyEvent *e);
+    void closeEvent(QCloseEvent *);
 
 public slots:
     void updateData();

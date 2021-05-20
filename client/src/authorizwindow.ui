@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>507</width>
-    <height>344</height>
+    <width>500</width>
+    <height>250</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>100</y>
+     <y>70</y>
      <width>371</width>
      <height>91</height>
     </rect>
@@ -48,9 +48,9 @@
   <widget class="QLabel" name="authorizLabel">
    <property name="geometry">
     <rect>
-     <x>180</x>
-     <y>60</y>
-     <width>91</width>
+     <x>220</x>
+     <y>30</y>
+     <width>81</width>
      <height>17</height>
     </rect>
    </property>
@@ -62,7 +62,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>190</y>
+     <y>160</y>
      <width>171</width>
      <height>51</height>
     </rect>
@@ -88,7 +88,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>200</y>
+     <y>170</y>
      <width>191</width>
      <height>27</height>
     </rect>

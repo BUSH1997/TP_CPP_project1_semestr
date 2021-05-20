@@ -2,7 +2,6 @@
 #include <QUrl>
 
 AudioRecorder::AudioRecorder(QString fileName) {
-
     encoderSettings.setSampleRate(48000);
     encoderSettings.setChannelCount(1);
     encoderSettings.setBitRate(48000 * 1 * 16);
@@ -15,13 +14,16 @@ AudioRecorder::AudioRecorder(QString fileName) {
 
 }
 
+
 void AudioRecorder::record() {
     audioRecorder->record();
 }
 
+
 void AudioRecorder::stop() {
     audioRecorder->stop();
 }
+
 
 int AudioRecorder::testRecord() {
     audioRecorder->record();
@@ -34,8 +36,7 @@ int AudioRecorder::testRecord() {
     return 0;
 }
 
+
 AudioRecorder::~AudioRecorder() {
     delete audioRecorder;
 }
-
-

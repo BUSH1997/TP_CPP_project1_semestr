@@ -27,9 +27,6 @@ void AudioOutput::stop() {
     audio->stop();
 }
 
-void AudioOutput::test() {
-
-}
 
 AudioOutput::~AudioOutput() {
     delete audio;
