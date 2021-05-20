@@ -12,10 +12,8 @@ public:
     std::string password;
     std::size_t userId = 0;
     std::string updateDate;
-    std::string status;
+    std::string status = "active";
     std::string avatarName;
-    std::string avatarData;
-    std::size_t avatarSize = 0;
 };
 
 struct MessageData {
@@ -26,8 +24,6 @@ struct MessageData {
     std::string contentType; // "audio" / "text"
     std::string chatType; // "private" / "public"
     std::string fileName;
-    std::string fileData;
-    std::size_t fileSize = 0;
 };
 
 struct JsonData {
@@ -46,3 +42,4 @@ public:
 };
 
 #endif //TEST_DB3_PARSER_H
+

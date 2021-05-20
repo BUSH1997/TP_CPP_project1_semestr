@@ -6,7 +6,6 @@
 #define CONNECTION_ERROR 7
 #define QUERY_ERROR 8
 
-
 #include <exception>
 
 class MySQLDBExceptions: public std::exception
@@ -17,7 +16,7 @@ public:
     const char* what() const noexcept override{
         return m_error.c_str();
     }
-    std::size_t errorCode;
+    std::size_t errorCode{};
 private:
     std::string m_error;
 };
@@ -43,3 +42,4 @@ public:
 };
 
 #endif //TEST_DB3_DBEXCEPTIONS_H
+

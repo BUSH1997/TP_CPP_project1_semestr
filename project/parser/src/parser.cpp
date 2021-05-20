@@ -22,9 +22,7 @@ boost::property_tree::ptree buildJsonTree(const JsonData &jsonData)
         arrayElem.put("userId", user.userId);
         arrayElem.put("updateDate", user.updateDate);
         arrayElem.put("status", user.status);
-        arrayElem.put("avatarData", user.avatarData);
         arrayElem.put("avatarName", user.avatarName);
-        arrayElem.put("avatarSize", user.avatarSize);
         usersArray.push_back(boost::property_tree::ptree::value_type("", arrayElem)); });
 
 
@@ -40,8 +38,6 @@ boost::property_tree::ptree buildJsonTree(const JsonData &jsonData)
         arrayElem.put("contentType", message.contentType);
         arrayElem.put("chatType", message.chatType);
         arrayElem.put("fileName", message.fileName);
-        arrayElem.put("fileSize", message.fileSize);
-        arrayElem.put("fileData", message.fileData);
         messagesArray.push_back(boost::property_tree::ptree::value_type("", arrayElem)); });
 
     proto.put_child("messages", messagesArray);
@@ -75,8 +71,6 @@ JsonData JsonParser::jsonToJsonData(const std::string &jsonString) {
             user.updateDate = element.second.get<std::string>("updateDate", "");
             user.status = element.second.get<std::string>("status", "");
             user.avatarName = element.second.get<std::string>("avatarName", "");
-            user.avatarData = element.second.get<std::string>("avatarData", "");
-            user.avatarSize = element.second.get<std::size_t>("avatarSize", 0);
             jsonData.users.push_back(user);
         }
     }
@@ -95,8 +89,6 @@ JsonData JsonParser::jsonToJsonData(const std::string &jsonString) {
             message.contentType = element.second.get<std::string>("contentType", "");
             message.chatType = element.second.get<std::string>("chatType", "");
             message.fileName = element.second.get<std::string>("fileName", "");
-            message.fileSize = element.second.get<std::size_t>("fileSize =", 0);
-            message.fileData = element.second.get<std::string>("fileData", "");
             jsonData.messages.push_back(message);
        }
     }

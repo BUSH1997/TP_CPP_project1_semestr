@@ -16,6 +16,7 @@ typedef struct {
     std::string surname;
     std::string login;
     std::string password;
+    std::size_t isAuthorized;
     std::string avatarName;
     std::string updateDate;
     std::string status;
@@ -56,7 +57,7 @@ public:
         closeConnection();
     }
 
-    MYSQL* connection_m;
+    MYSQL* connection_m{};
 
 private:
     static MYSQL* mysql_connection_setup(struct connectionDetails);
@@ -73,6 +74,7 @@ public:
     int SELECT_LAST_USER_ID();
     MySQLManager& mg;
     void UPDATE(const std::string& date, int receiver_id);
+    void UPDATE(std::size_t userId, const std::string& selector, const std::string& value);
 
 private:
     static std::vector<UsersData> fillUserData( MYSQL_RES* res);

@@ -4,6 +4,7 @@
 #define INVALID_PASSWORD 1
 #define INVALID_LOGIN 2
 #define LOGIN_EXISTS 3
+#define USER_DELETED 4
 
 #include <exception>
 #include <string>
@@ -16,9 +17,9 @@ public:
     const char* what() const noexcept override{
         return m_error.c_str();
     }
-    std::size_t errorCode;
+    std::size_t errorCode{};
 private:
-    std::string m_error{};
+    std::string m_error;
 };
 
 class InvalidPassword : public BusinessLogicExceptions {
@@ -34,6 +35,11 @@ public:
 class LoginExists : public BusinessLogicExceptions {
 public:
     explicit LoginExists(): BusinessLogicExceptions("Such login has already registered!") {errorCode = LOGIN_EXISTS;};
+};
+
+class DeletedUser : public BusinessLogicExceptions {
+public:
+    explicit DeletedUser(): BusinessLogicExceptions("User is deleted!") {errorCode = USER_DELETED;};
 };
 
 #endif //TEST_DB3_BLEXCEPTIONS_H

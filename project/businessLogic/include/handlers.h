@@ -15,7 +15,6 @@
 #define MIN_PASSWORD_LENGTH 6
 #define MIN_LOGIN_LENGTH 6
 
-
 #define HOST "localhost"
 #define USER "bushcast"
 #define PASSWORD "Sergeykust_333"
@@ -29,6 +28,7 @@ public:
     static void completeJsonData(JsonData& jsonData, const std::vector<MessagesData>& messages);
     static void completeUsersData(UsersData& userData, const JsonData& jsonData);
     static void completeMessagesData(MessagesData& messageData, const JsonData& jsonData);
+    static void writeLogger(const std::string& helper,const std::string& error);
 };
 
 class Handler {
@@ -53,6 +53,13 @@ public:
     JsonData handle(const JsonData& jsonData) override;
 };
 
+class UserDeAuthorizerHandler : public Handler {
+public:
+    bool canHandle(const JsonData& jsonData) override;
+
+    JsonData handle(const JsonData& jsonData) override;
+};
+
 class MessageControllerHandler : public Handler {
 public:
     bool canHandle(const JsonData& jsonData) override;
@@ -61,7 +68,7 @@ public:
 
 };
 
-class UpdateDateHandler : public Handler {
+class LoadArchiveHandler : public Handler {
 public:
     bool canHandle(const JsonData& jsonData) override;
 
@@ -69,7 +76,7 @@ public:
 
 };
 
-class LoadArchiveHandler : public Handler {
+class StartChatHandler : public Handler {
 public:
     bool canHandle(const JsonData& jsonData) override;
 
