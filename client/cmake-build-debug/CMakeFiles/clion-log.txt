@@ -1,0 +1,25 @@
+/home/kadyrov_suleyman/clion-2020.2.4/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" "/home/kadyrov_suleyman/QT my examples/client"
+-- The CXX compiler identification is GNU 9.3.0
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ - works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at /usr/lib/x86_64-linux-gnu/cmake/Qt5/Qt5Config.cmake:28 (find_package):
+  Could not find a package configuration file provided by "Qt5Multimedia"
+  with any of the following names:
+
+    Qt5MultimediaConfig.cmake
+    qt5multimedia-config.cmake
+
+  Add the installation prefix of "Qt5Multimedia" to CMAKE_PREFIX_PATH or set
+  "Qt5Multimedia_DIR" to a directory containing one of the above files.  If
+  "Qt5Multimedia" provides a separate development package or SDK, be sure it
+  has been installed.
+Call Stack (most recent call first):
+  CMakeLists.txt:16 (find_package)
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/kadyrov_suleyman/QT my examples/client/cmake-build-debug/CMakeFiles/CMakeOutput.log".
