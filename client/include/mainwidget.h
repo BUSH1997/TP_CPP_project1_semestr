@@ -22,7 +22,7 @@
 
 #include "audiooutput.h"
 #include "audiorecorder.h"
-#include "Parser.h"
+#include "parser.h"
 #include "contactWidget.h"
 #include "serverConnection.h"
 #include "newdialogwidget.h"
@@ -39,16 +39,17 @@
 #include <iostream>
 #include <boost/asio.hpp>
 
+#include <fstream>
 
 class ContactListClass {
 private:
     JsonData sessionInformation;
 
-    int& dialogId(JsonData& data) {
-        if (data.transmitterId == sessionInformation.userId) {
-            return data.receiverId;
+    std::size_t& dialogId(JsonData& data) {
+        if (data.messages.back().transmitterId == sessionInformation.users.back().userId) {
+            return data.messages.back().receiverId;
         }
-        return data.transmitterId;
+        return data.messages.back().transmitterId;
     }
 
 public:
@@ -68,9 +69,14 @@ public:
         list.push_front(data);
 
         list.sort([](JsonData a, JsonData b) {
-            return a.date > b.date;
+            return a.messages.back().date > b.messages.back().date;
         });
     }
+
+    void readSessionInformation(JsonData& data) {
+        this->sessionInformation = data;
+    }
+
 };
 
 
@@ -78,11 +84,11 @@ class DialogMapClass {
 private:
     JsonData sessionInformation;
 
-    int& dialogId(JsonData& data) {
-        if (data.transmitterId == sessionInformation.userId) {
-            return data.receiverId;
+    std::size_t& dialogId(JsonData& data) {
+        if (data.messages.back().transmitterId == sessionInformation.users.back().userId) {
+            return data.messages.back().receiverId;
         }
-        return data.transmitterId;
+        return data.messages.back().transmitterId;
     }
 
 public:
@@ -96,7 +102,7 @@ public:
         map[dialogId(data)].push_back(data);  // могут приходить не одновременно
 
         map[dialogId(data)].sort([](JsonData a, JsonData b) {
-            return a.date < b.date;
+            return a.messages.back().date < b.messages.back().date;
         });
     }
 
@@ -167,6 +173,7 @@ public:
     void start() {
         sourceFile.open(QIODevice::ReadOnly);
         audio = new QAudioOutput(audioFormat);
+        audio->setVolume(50);
         audio->start(&sourceFile);
     }
     void stop() {
@@ -193,6 +200,7 @@ public:
         audioFormat.setCodec(codec);
         audioFormat.setByteOrder(QAudioFormat::LittleEndian);
         audioFormat.setSampleType(QAudioFormat::SignedInt);
+
 
         std::cout << "soundThread was created" << std::endl;
     }
@@ -266,13 +274,19 @@ public:
     ~MainWidget();
 
     void makeContactList();
-
-//    void writeSessionInformation();
     void readSessionInformation(JsonData data);
 
-    void sendFile(const std::string& filePath);
+    void sendFile(const std::string filePath);
 
-    int& dialogId(JsonData& data);
+    void handleAuthorizeReply(JsonData);
+
+    std::size_t& dialogId(JsonData& data);
+
+    std::unique_ptr<ContactListClass> contactList;
+    std::unique_ptr<DialogMapClass> dialogMap;
+
+    std::unique_ptr<QLineEdit> inputMessage;
+    std::string fileName;
 
 protected:
     void keyPressEvent(QKeyEvent *e);
@@ -284,7 +298,8 @@ public slots:
     void addVoiceMessageToDialog(JsonData& message);
     void sendMessage();
     void sendMessage(JsonData& message);
-    void receiveMessage(std::string& messageStr);
+//    void receiveMessage(std::string& messageStr);
+    void receiveMessage(QString messageStr);
     void addContact();
 
     void recordAudio();
@@ -311,7 +326,7 @@ private:
     RecordThread recordThread;
     SoundThread soundThread;
 
-    ServerConnection serverConnection;
+//    ServerConnection serverConnection;
 
     std::unique_ptr<NewDialogWidget> newDialogWidget;
 
@@ -327,14 +342,13 @@ private:
 //    --------------------
     std::unique_ptr<QPushButton> testFooButton;
     std::unique_ptr<QListWidget> contactListWidget;
-    std::unique_ptr<ContactListClass> contactList;
 
 //    --------------------
     std::unique_ptr<QVBoxLayout> leftBoardLayout;
     std::unique_ptr<QListWidget> dialogWidget;
 
 //    --------------------
-    std::unique_ptr<DialogMapClass> dialogMap;
+//    std::unique_ptr<DialogMapClass> dialogMap;
 
 //    --------------------
     std::unique_ptr<QWidget> bottomBoardWidget;

@@ -1,8 +1,7 @@
-
 set (BOOST_ROOT "/usr/local/boost_1_76_0")
 set (Boost_NO_SYSTEM_PATHS OFF)
 
-add_library(parser STATIC Parser.cpp Parser.h)
+add_library(parser STATIC parser.cpp parser.h)
 
 target_include_directories (parser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

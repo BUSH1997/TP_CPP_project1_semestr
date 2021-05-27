@@ -98,6 +98,12 @@
    </property>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>loginLine</tabstop>
+  <tabstop>passwordLine</tabstop>
+  <tabstop>signInButton</tabstop>
+  <tabstop>signUpButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -48,160 +48,126 @@ Application::Application() {
     connect(registrationWindow->ui->signInButton, SIGNAL(clicked()),
             registrationWindow.get(), SLOT(hide()));
 
+//    client->connect(ep);
+
 }
 
 
+//void Application::authorization() {
+//    QDir dir("cache/sessions");
+//    QFile f(dir.path() + "/" + authorizWindow->ui->loginLine->text());
+//    if (!f.open(QIODevice::ReadOnly)) {
+//        return;
+//    }
+
+//    QByteArray array = f.read(65536);
+//    std::string str(array.constData(), array.size());
+//    JsonData sessionInformation = JsonParser::jsonToJsonData(str);
+
+//    mainWidget->readSessionInformation(sessionInformation);
+//    mainWidget->contactList->readSessionInformation(sessionInformation);
+//}
+
+
 void Application::authorization() {
-    QDir dir("cache/sessions");
-    QFile f(dir.path() + "/" + authorizWindow->ui->loginLine->text());
-    if (!f.open(QIODevice::ReadOnly)) {
-        return;
-    }
-
-    QByteArray array = f.read(65536);
-    std::string str(array.constData(), array.size());
-    JsonData sessionInformation = JsonParser::jsonToJsonData(str);
-
-    mainWidget->readSessionInformation(sessionInformation);
+    mainWidget->readCache();
 }
 
 
 void Application::signIn() {
     authorizWindow->ui->warningLabel->hide();
 
-    switch (authorizWindow->sendData()) {
-        case CONNECT_ERROR: {
-            authorizWindow->ui->warningLabel->show();
-            authorizWindow->ui->warningLabel->setText("No connection");
-            return;
-        }
+    auto reply = authorizWindow->sendData();
+    if (!reply.errorDescription) {
+        mainWidget->readSessionInformation(reply);
+        mainWidget->contactList->readSessionInformation(reply);
+        mainWidget->dialogMap->readSessionInformation(reply);
 
-        case UNCORRECT_DATA: {
-            authorizWindow->ui->warningLabel->show();
-            authorizWindow->ui->warningLabel->setText("Uncorrect login or password");
-            return;
-        }
+        std::string temp = reply.users.back().login + " # " + std::to_string(reply.users.back().userId);
+        mainWidget->setWindowTitle(QString::fromStdString(temp));
 
-        case EMPTY_FIELDS: {
-            authorizWindow->ui->warningLabel->show();
-            authorizWindow->ui->warningLabel->setText("Fill all text fields");
-            return;
-        }
+        authorization();
+        mainWidget->handleAuthorizeReply(reply);
 
-        case USER_DOESNT_EXIST: {
-            authorizWindow->ui->warningLabel->show();
-            authorizWindow->ui->warningLabel->setText("Uncorrect login or password");
-            return;
-        }
-
-        case UNCORRECT_LOGIN_PASSWORD: {
-            authorizWindow->ui->warningLabel->show();
-            authorizWindow->ui->warningLabel->setText("Uncorrect login or password");
-            return;
-        }
-
-        case CORRECT_DATA: {
-            authorization();
-            mainWidget->readCache();
-            mainWidget->makeContactList();
-            break;
-        }
-
-        default:
-            return;
+        mainWidget->show();
+        authorizWindow->close();
+        registrationWindow->close();
+        return;
     }
 
-    mainWidget->show();
-    authorizWindow->close();
-    registrationWindow->close();
+    authorizWindow->ui->warningLabel->show();
+    authorizWindow->ui->warningLabel->setText(errorMap[reply.errorDescription]);
+    return;
+
 }
 
 
 void Application::registration() {
-    QDir dir("cache");
-    QFile f(dir.path() + "/usersId");
-    if (!f.open(QIODevice::ReadWrite)) {
-        return;
-    }
-    QByteArray byteArray = f.read(65536);
-    std::string str(byteArray.constData(), byteArray.length());
+//    QDir dir("cache");
+//    QFile f(dir.path() + "/usersId");
+//    if (!f.open(QIODevice::ReadWrite)) {
+//        return;
+//    }
+//    QByteArray byteArray = f.read(65536);
+//    std::string str(byteArray.constData(), byteArray.length());
 
-    auto l = str.rfind('{') + 1;
-    auto r = str.rfind('}');
-    if (l == std::string::npos)
-        return;
-    auto number = std::stoul(std::string(str, l, r)) + 1;
+//    auto l = str.rfind('{') + 1;
+//    auto r = str.rfind('}');
+//    if (l == std::string::npos)
+//        return;
+//    auto number = std::stoul(std::string(str, l, r)) + 1;
 
-    std::string numberStr = "{" + std::to_string(number) + "}" + "\n";
-    f.write(QByteArray(numberStr.c_str(), numberStr.length()));
-    f.close();
+//    std::string numberStr = "{" + std::to_string(number) + "}" + "\n";
+//    f.write(QByteArray(numberStr.c_str(), numberStr.length()));
+//    f.close();
 
-    JsonData newUser;
-    newUser.userId = number + 1;
-    newUser.name = registrationWindow->ui->nameLine->text().toStdString();
-    newUser.login = registrationWindow->ui->loginLine->text().toStdString();
-    newUser.password = registrationWindow->ui->passwordLine->text().toStdString();
-    newUser.transmitterId = newUser.userId;
+//    JsonData newUser;
+//    UserData user;
+//    user.name = registrationWindow->ui->nameLine->text().toStdString();
+//    user.userId = number + 1;
+//    user.name = registrationWindow->ui->nameLine->text().toStdString();
+//    user.login = registrationWindow->ui->loginLine->text().toStdString();
+//    user.password = registrationWindow->ui->passwordLine->text().toStdString();
+//    newUser.users.push_back(user);
 
-    QDir dir2("cache/sessions");
-    QFile f2(dir2.path() + "/" + QString::fromStdString(newUser.login));
-    if (!f2.open(QIODevice::WriteOnly)) {
-        return;
-    }
+//    QDir dir2("cache/sessions");
+//    QFile f2(dir2.path() + "/" + QString::fromStdString(newUser.users.back().login));
+//    if (!f2.open(QIODevice::WriteOnly)) {
+//        return;
+//    }
 
-    auto t = JsonParser::jsonDataToJson(newUser);
-    QByteArray byteArray2(t.c_str(), t.length());
+//    auto t = JsonParser::jsonDataToJson(newUser);
+//    QByteArray byteArray2(t.c_str(), t.length());
 
-    f2.write(byteArray2);
-    f2.close();
+//    f2.write(byteArray2);
+//    f2.close();
 
-    mainWidget->readSessionInformation(newUser);
+//    mainWidget->readSessionInformation(newUser);
 }
 
 void Application::signUp() {
     registrationWindow->ui->warningLabel->hide();
 
-    switch (registrationWindow->sendData()) {
-        case UNEQUAL_PASSWORDS: {
-            registrationWindow->ui->warningLabel->show();
-            registrationWindow->ui->warningLabel->setText("Passwords are not equal");
-            return;
-        }
+    authorizWindow->ui->warningLabel->hide();
 
-        case CONNECT_ERROR: {
-            registrationWindow->ui->warningLabel->show();
-            registrationWindow->ui->warningLabel->setText("No connection");
-            return;
-        }
+    auto reply = registrationWindow->sendData();
+    if (!reply.errorDescription) {
+//        authorization();
 
-        case UNCORRECT_DATA: {
-            registrationWindow->ui->warningLabel->show();
-            registrationWindow->ui->warningLabel->setText("Uncorrect login or password");
-            return;
-        }
+        mainWidget->readSessionInformation(reply);
+        mainWidget->contactList->readSessionInformation(reply);
+        mainWidget->dialogMap->readSessionInformation(reply);
 
-        case EMPTY_FIELDS: {
-            registrationWindow->ui->warningLabel->show();
-            registrationWindow->ui->warningLabel->setText("Fill all text fields");
-            return;
-        }
+        std::string temp = reply.users.back().login + " # " + std::to_string(reply.users.back().userId);
+        mainWidget->setWindowTitle(QString::fromStdString(temp));
 
-        case USER_EXIST: {
-            registrationWindow->ui->warningLabel->show();
-            registrationWindow->ui->warningLabel->setText("User already exist");
-            return;
-        }
-
-        case CORRECT_DATA: {
-            registration();
-            break;
-        }
-
-        default:
-            return;
+        mainWidget->show();
+        authorizWindow->close();
+        registrationWindow->close();
+        return;
     }
 
-    mainWidget->show();
-    authorizWindow->close();
-    registrationWindow->close();
+    registrationWindow->ui->warningLabel->show();
+    registrationWindow->ui->warningLabel->setText(errorMap[reply.errorDescription]);
+    return;
 }

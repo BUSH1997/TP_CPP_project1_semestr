@@ -3,8 +3,12 @@
 
 #include <QWidget>
 #include <QKeyEvent>
-#include "Parser.h"
-#include "serverConnection.h"
+#include "parser.h"
+//#include "serverConnection.h"
+#include "sync_client.h"
+
+extern std::unique_ptr<talk_to_svr> client;
+extern ip::tcp::endpoint ep;
 
 namespace Ui {
 class RegistrationWindow;
@@ -26,12 +30,15 @@ protected:
 
 public slots:
     void updateData();
-    int sendData();
+    JsonData sendData();
+
+public:
+    JsonData data;
 
 private:
-    JsonData data;
+
     std::string repeatPasswordStr;
-    ServerConnection serverConnection;
+//    ServerConnection serverConnection;
 };
 
 #endif // REGISTRATIONWINDOW_H

@@ -1,7 +1,7 @@
 #ifndef CONTACTWIDGET_H
 #define CONTACTWIDGET_H
 
-#include "Parser.h"
+#include "parser.h"
 
 #include <QWidget>
 #include <QListWidget>

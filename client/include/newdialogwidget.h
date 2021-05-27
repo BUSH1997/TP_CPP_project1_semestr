@@ -1,8 +1,9 @@
 #ifndef NEWDIALOGWIDGET_H
 #define NEWDIALOGWIDGET_H
 
-#include "serverConnection.h"
-#include "Parser.h"
+//#include "serverConnection.h"
+#include "sync_client.h"
+#include "parser.h"
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -18,6 +19,9 @@
 #include <chrono>
 #include <memory>
 #include <iostream>
+
+extern std::unique_ptr<talk_to_svr> client;
+extern ip::tcp::endpoint ep;
 
 class NewDialogWidget : public QWidget {
     Q_OBJECT
@@ -42,7 +46,6 @@ private:
     JsonData sessionInformation;
 
     QString userIdStr;
-    ServerConnection serverConnection;
 
     std::unique_ptr<QVBoxLayout> newDialogLayout;
 
@@ -58,6 +61,20 @@ private:
     std::unique_ptr<QLabel> warningLabel;
     std::unique_ptr<QWidget> spacer;
     std::unique_ptr<QPushButton> addButton;
+
+    std::map<int, QString> errorMap{
+        {0, "Success"},
+        {1, "Invalid Password"},
+        {2, "Invalid Login"},
+        {3, "Login already exist"},
+        {4, "User was deleted"},
+        {5, "User not found"},
+        {6, "No message found"},
+        {7, "Connection error"},
+        {8, "Query error"},
+        {9, "Fill all text fields"},
+        {10, "Passwords are not equal"}
+    };
 
 };
 

@@ -4,7 +4,11 @@
 #include <QFrame>
 #include <QKeyEvent>
 #include "serverConnection.h"
-#include "Parser.h"
+#include "parser.h"
+#include "sync_client.h"
+
+extern std::unique_ptr<talk_to_svr> client;
+extern ip::tcp::endpoint ep;
 
 namespace Ui {
 class Frame;
@@ -26,11 +30,10 @@ protected:
 
 public slots:
     void updateData();
-    int sendData();
+    JsonData sendData();
 
-private:
+public:
     JsonData data;
-    ServerConnection serverConnection;
 
 };
 

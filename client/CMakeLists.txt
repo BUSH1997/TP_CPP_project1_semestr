@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16.3)
 
 project(client LANGUAGES CXX)
 
@@ -53,6 +53,9 @@ set(PROJECT_SOURCES
         ./include/application.h
         ./src/application.cpp
 
+        ./include/sync_client.h
+        ./src/sync_client.cpp
+
 )
 
 #add_executable(client main.cpp)
@@ -73,8 +76,13 @@ else()
     endif()
 endif()
 
-target_link_libraries(client PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_link_libraries(client PRIVATE Qt${QT_VERSION_MAJOR}::Multimedia)
-target_link_libraries(client PRIVATE Threads::Threads)
-target_link_libraries(client PRIVATE parser)
-target_link_libraries(client PRIVATE ${Boost_LIBRARIES})
+target_link_libraries(client PUBLIC Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(client PUBLIC Qt${QT_VERSION_MAJOR}::Multimedia)
+target_link_libraries(client PUBLIC Threads::Threads)
+target_link_libraries(client PUBLIC parser)
+target_link_libraries(client PUBLIC ${Boost_LIBRARIES})
+
+find_package(Boost COMPONENTS thread REQUIRED)
+target_link_libraries(client PUBLIC Boost::thread)
+
+

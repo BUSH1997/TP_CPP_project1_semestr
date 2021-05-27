@@ -11,7 +11,7 @@ using boost::asio::ip::tcp;
 
 class ServerConnection: public boost::noncopyable {
 private:
-    enum { maxLength = 1024 };
+    enum { maxLength = 2048 };
     boost::asio::io_service io_service;
     tcp::socket s;
     tcp::resolver resolver;
@@ -19,6 +19,8 @@ private:
     std::string port = "8000";
 
     size_t request_length;
+
+    size_t bufferLength;
 
 public:
     ServerConnection(): s(io_service), resolver(io_service) {
@@ -116,6 +118,14 @@ public:
         request_length = std::strlen(request);
         boost::asio::write(s, boost::asio::buffer(request, request_length));
 
+    }
+
+    void write(std::string& message) {
+        boost::asio::connect(s, resolver.resolve({ip, port}));
+        char buffer[maxLength];
+        std::copy(message.begin(), message.end(), buffer);
+        bufferLength = std::strlen(buffer);
+        boost::asio::write(s, boost::asio::buffer(buffer, bufferLength));
     }
 
     void read() {

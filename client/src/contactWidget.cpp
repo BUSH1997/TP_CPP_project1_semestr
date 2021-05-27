@@ -22,13 +22,19 @@ ContactWidget::ContactWidget(JsonData data, QListWidget* parent) {
     contactTopPanelLayout->setMargin(0);
     contactTopPanel->setLayout(contactTopPanelLayout.get());
     contactRightPanelLayout->addWidget(contactTopPanel.get(), 7);
-    contactNameLabel = std::make_unique<QLabel>(QString::fromStdString(data.name),
+    contactNameLabel = std::make_unique<QLabel>(QString::fromStdString(data.users.back().name),
                                                 contactRightPanel.get());
+
+//    contactNameLabel = std::make_unique<QLabel>(QString::fromStdString(selec),
+//                                                contactRightPanel.get());
+
     contactTopPanelLayout->addWidget(contactNameLabel.get());
 
-    auto t = std::time_t(std::stol(data.date));
-    char timestr[100];
-    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+//    auto t = std::time_t(std::stoul(data.messages.back().date));
+//    char timestr[100];
+//    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+    std::string timestr = data.users.back().updateDate;
+
 
     timeLabel = std::make_unique<QLabel>(QString::fromStdString(timestr),
                                          contactTopPanel.get());
@@ -41,7 +47,7 @@ ContactWidget::ContactWidget(JsonData data, QListWidget* parent) {
     contactBottomPanel->setLayout(contactBottomPanelLayout.get());
     contactRightPanelLayout->addWidget(contactBottomPanel.get(), 7);
 
-    prewMessageLabel = std::make_unique<QLabel>(QString::fromStdString(data.text),
+    prewMessageLabel = std::make_unique<QLabel>(QString::fromStdString(data.messages.back().text),
                                                 contactWidget.get());
     contactBottomPanelLayout->addWidget(prewMessageLabel.get(), 1);
     contactBottomPanelLayout->addWidget(new QLabel("readCheck"));
@@ -53,11 +59,13 @@ ContactWidget::ContactWidget(JsonData data, QListWidget* parent) {
 
 
 void ContactWidget::update(JsonData data) {
-    auto t = std::time_t(std::stol(data.date));
-    char timestr[100];
-    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+//    auto t = std::time_t(std::stol(data.messages.back().date));
+//    char timestr[100];
+//    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+
+    std::string timestr = data.messages.back().date;
     timeLabel->setText(QString::fromStdString(timestr));
 
-    prewMessageLabel->setText(QString::fromStdString(data.text));
+    prewMessageLabel->setText(QString::fromStdString(data.messages.back().text));
 }
 

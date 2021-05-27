@@ -22,7 +22,7 @@ NewDialogWidget::NewDialogWidget(QWidget *parent) {
     newDialogLayout->addWidget(newDialogTopWidget.get());
     newDialogTopWidget->setLayout(newDialogTopLayout.get());
 
-    userIdLabel = std::make_unique<QLabel>("UserId: ", newDialogTopWidget.get());
+    userIdLabel = std::make_unique<QLabel>("User login: ", newDialogTopWidget.get());
     newDialogTopLayout->addWidget(userIdLabel.get(), 2);
 
     userIdLine = std::make_unique<QLineEdit>(newDialogTopWidget.get());
@@ -69,60 +69,109 @@ void NewDialogWidget::sendData() {
         return;
     }
 
-    auto userId = userIdStr.toInt();
+    auto login = userIdStr.toStdString();
     JsonData data;
-    data.userId = userId;
-    data.transmitterId = sessionInformation.userId;
-    data.receiverId = userId;
-    data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+    data.users.push_back(UserData());
+    data.users.back().login = login;
+    data.requestStatus = 1;
+    data.errorDescription = 0;
+    data.requestType = "new_dialog";
 
-    if (!data.userId) {
-        warningLabel->setText("Uncorrect UserId");
-        return;
-    }
+    auto reply = client->get_user(data);
 
-    auto dataStr = JsonParser::jsonDataToJson(data);
-    std::string replyStr = "";
-    if (serverConnection.start()) {
-        serverConnection.stop();
-        warningLabel->setText("No connection");
-        return;
-    }
-    replyStr = serverConnection.echoWriteRead(dataStr);
-    serverConnection.stop();
 
-    if (replyStr != dataStr) {
-        warningLabel->setText("Message not delivered");
-        return;
-    } else {
-        data.status = true;
-        std::cout << "message was sended" << std::endl;
+//    auto replyError = reply.errorDescription;
 
-//        -------------------------
-        auto userId = userIdStr.toInt();
-        JsonData receive;
-        receive.userId = userId;
-        receive.transmitterId = userId;
-        receive.receiverId = sessionInformation.userId;
-        receive.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
-        receive.name = "contact #" + std::to_string(receive.transmitterId);
+//    if (replyError) {
+//        std::cout << "error" << std::endl;
+//        warningLabel->setText("error");
+//        return;
+//    }
 
-        auto receiveStr = JsonParser::jsonDataToJson(receive);
-        std::string replyStr = "";
-        if (serverConnection.start()) {
-            serverConnection.stop();
-            warningLabel->setText("No connection");
-            return;
-        }
-        replyStr = serverConnection.echoWriteRead(receiveStr);
-        serverConnection.stop();
-//        -------------------------
+//    signal->setText(QString::fromStdString(JsonParser::jsonDataToJson(reply)));
+//    warningLabel->setText("");
+//    userIdLine->clear();
+//    this->close();
 
-        signal->setText(QString::fromStdString(replyStr));
+    if (!reply.errorDescription) {
+        signal->setText(QString::fromStdString(JsonParser::jsonDataToJson(reply)));
         warningLabel->setText("");
         userIdLine->clear();
         this->close();
+        return;
     }
+
+    warningLabel->setText(errorMap[reply.errorDescription]);
+
+
+
+
+//    ----------------------------
+
+//    auto userId = userIdStr.toULong();
+//    JsonData data;
+//    data.users.push_back(UserData());
+//    data.messages.push_back(MessageData());
+
+//    data.messages.back().transmitterId = sessionInformation.users.back().userId;
+//    data.messages.back().receiverId = userId;
+//    data.messages.back().date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+
+//    if (!data.messages.back().receiverId) {
+//        warningLabel->setText("Uncorrect UserId");
+//        return;
+//    }
+
+//    auto dataStr = JsonParser::jsonDataToJson(data);
+//    std::string replyStr = "";
+//    if (serverConnection.start()) {
+//        serverConnection.stop();
+//        warningLabel->setText("No connection");
+//        return;
+//    }
+//    replyStr = serverConnection.echoWriteRead(dataStr);
+//    serverConnection.stop();
+
+//    if (replyStr != dataStr) {
+//        warningLabel->setText("Message not delivered");
+//        return;
+//    } else {
+//        data.requestStatus = 1;
+//        std::cout << "message was sended" << std::endl;
+
+////        -------------------------
+//        auto userId = userIdStr.toULong();
+
+//        JsonData receive;
+//        UserData receiveUser;
+//        receiveUser.userId = userId;
+//        receive.users.push_back(receiveUser);
+
+
+//        MessageData message;
+//        message.transmitterId = userId;
+//        message.receiverId = sessionInformation.users.back().userId;
+//        message.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+//        receive.users.back().name = "contact #" + std::to_string(message.transmitterId);
+//        receive.messages.push_back(message);
+
+//        auto receiveStr = JsonParser::jsonDataToJson(receive);
+//        std::string replyStr = "";
+//        if (serverConnection.start()) {
+//            serverConnection.stop();
+//            warningLabel->setText("No connection");
+//            return;
+//        }
+//        replyStr = serverConnection.echoWriteRead(receiveStr);
+//        serverConnection.stop();
+
+////        -------------------------
+
+//        signal->setText(QString::fromStdString(replyStr));
+//        warningLabel->setText("");
+//        userIdLine->clear();
+//        this->close();
+//    }
 }
 
 

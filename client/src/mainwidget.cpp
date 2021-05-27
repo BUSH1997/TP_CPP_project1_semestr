@@ -1,5 +1,34 @@
 #include "mainwidget.h"
 
+//extern std::unique_ptr<QLineEdit> inputMessage;
+
+//static std::string parser(std::string data) {
+//    std::list<char> list;
+
+//    if (data == "ping") {
+//        return data;
+//    }
+
+//    std::string result = data;
+
+//    int i = 0;
+//    for (auto it = data.begin(); it != data.end(); ++it, ++i) {
+
+//        if (*it == '{') {
+//            list.push_back('1');
+//        }
+//        if (*it == '}') {
+//            list.pop_back();
+//            if (list.empty()) {
+//                result = std::string(data, 0, i + 1);
+//                break;
+//            }
+//        }
+//    }
+//    return result;
+//}
+
+
 
 MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
     QDir audioDir;
@@ -7,6 +36,14 @@ MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
 
     QDir cacheDir;
     cacheDir.mkdir("cache");
+
+//    client->getReceiveMessAddress(&MainWidget::receiveMessage, this);
+
+    inputMessage = std::make_unique<QLineEdit>();
+    inputMessage->hide();
+    client->getInputMessageAddress(inputMessage.get());
+    connect(inputMessage.get(), SIGNAL(textChanged(QString)),
+            this, SLOT(receiveMessage(QString)));
 
     newDialogWidget = std::make_unique<NewDialogWidget>();
     connect(newDialogWidget.get()->signal.get(), SIGNAL(textChanged(QString)),
@@ -84,15 +121,15 @@ MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
     buttonsLayout = std::make_unique<QVBoxLayout>(buttonsWidget.get());
     buttonsWidget->setLayout(buttonsLayout.get());
 
-    sendButton = std::make_unique<QPushButton>(buttonsWidget.get());
-    buttonsLayout->addWidget(sendButton.get());
-    sendButton->setText("&Send");
-    connect(sendButton.get(), SIGNAL(clicked()), this, SLOT(sendMessage()));
-
     recordButton = std::make_unique<QPushButton>(buttonsWidget.get());
     buttonsLayout->addWidget(recordButton.get());
     recordButton->setText("&Record");
     connect(recordButton.get(), SIGNAL(clicked()), this, SLOT(recordAudio()));
+
+    sendButton = std::make_unique<QPushButton>(buttonsWidget.get());
+    buttonsLayout->addWidget(sendButton.get());
+    sendButton->setText("&Send");
+    connect(sendButton.get(), SIGNAL(clicked()), this, SLOT(sendMessage()));
 
     stopButton = std::make_unique<QPushButton>(buttonsWidget.get());
     buttonsLayout->addWidget(stopButton.get());
@@ -111,16 +148,17 @@ MainWidget::MainWidget(QWidget* parent): QWidget(parent) {
 }
 
 
-int& MainWidget::dialogId(JsonData& data) {
-    if (data.transmitterId == sessionInformation.userId) {
-        return data.receiverId;
+std::size_t& MainWidget::dialogId(JsonData& data) {
+    if (data.messages.back().transmitterId == sessionInformation.users.back().userId) {
+        return data.messages.back().receiverId;
     }
-    return data.transmitterId;
+    return data.messages.back().transmitterId;
 }
 
 
 void MainWidget::makeContactList() {
     for (auto it = contactList->list.begin(); it != contactList->list.end(); ++it) {
+//        std::cout << JsonParser::jsonDataToJson(*it) << std::endl;
         dialogMap->contactWidget[dialogId(*it)] = std::make_unique<ContactWidget>(*it, contactListWidget.get());
     }
 }
@@ -130,22 +168,24 @@ void MainWidget::addMessageToDialog(JsonData& message) {
     std::string str;
 
     str.append("transmitterId #");
-    str.append(std::to_string(message.transmitterId));
+    str.append(std::to_string(message.messages.back().transmitterId));
     str.append(" <");
 
-    auto t = std::time_t(std::stol(message.date));
-    char timestr[100];
-    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+//    auto t = std::time_t(std::stol(message.messages.back().date));
+//    char timestr[100];
+//    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+
+    std::string timestr = message.messages.back().date;
 
     str.append(timestr);
     str.append("> \n");
-    str.append(message.text);
+    str.append(message.messages.back().text);
     str.append("\n");
 
     QLabel* label = new QLabel(QString::fromStdString(str));
     QListWidgetItem* messageItem = new QListWidgetItem(dialogWidget.get());
     messageItem->setSizeHint(label->sizeHint());
-    if (message.transmitterId == sessionInformation.userId) {
+    if (message.messages.back().transmitterId == sessionInformation.users.back().userId) {
         label->setAlignment(Qt::AlignRight);
     }
     dialogWidget.get()->setItemWidget(messageItem, label);
@@ -160,16 +200,18 @@ void MainWidget::addMessageToDialog(JsonData& message) {
 void MainWidget::addVoiceMessageToDialog(JsonData& message) {
     std::string str;
     str.append("transmitterId #");
-    str.append(std::to_string(message.transmitterId));
+    str.append(std::to_string(message.messages.back().transmitterId));
     str.append(" <");
 
-    auto t = std::time_t(std::stol(message.date));
-    char timestr[100];
-    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+//    auto t = std::time_t(std::stol(message.messages.back().date));
+//    char timestr[100];
+//    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+    std::string timestr = message.messages.back().date;
+
 
     str.append(timestr);
     str.append("> \n");
-    str.append(message.text);
+    str.append(message.messages.back().text);
     str.append("\n");
 
     QListWidgetItem* messageItem = new QListWidgetItem(dialogWidget.get());
@@ -191,7 +233,8 @@ void MainWidget::addVoiceMessageToDialog(JsonData& message) {
     PlayButton* playButton = new PlayButton(dialogWidget.get());
     dialogMessagePtr->add(playButton);
     playButton->setText("&Play");
-    playButton->fileName = message.text;
+
+    playButton->fileName = message.messages.back().text;
     messageLayout->addWidget(playButton, 1);
 
     connect(playButton, SIGNAL(clicked()),
@@ -213,7 +256,7 @@ void MainWidget::addVoiceMessageToDialog(JsonData& message) {
     dialogMessagePtr->add(rightSpacer);
     messageLayout->addWidget(rightSpacer, 7);
 
-    if (dialogId(selectedContact->back()) == message.receiverId) {
+    if (dialogId(selectedContact->back()) == message.messages.back().receiverId) {
         rightSpacer->hide();
     } else {
         leftSpacer->hide();
@@ -225,6 +268,9 @@ void MainWidget::addVoiceMessageToDialog(JsonData& message) {
 
     connect(stopButton, SIGNAL(clicked()), stopButton, SLOT(hide()));
     connect(stopButton, SIGNAL(clicked()), playButton, SLOT(show()));
+
+
+    dialogWidget->scrollToBottom();
 }
 
 
@@ -250,10 +296,10 @@ void MainWidget::makeDialog(QListWidgetItem* item) {
     //отрисовывать по новой все сообщения
 
     for (auto &it : *selectedContact) {
-        if (it.contentType == "audio") {
+        if (it.messages.back().contentType == "audio") {
             addVoiceMessageToDialog(it);
         } else {
-            if (it.text.empty()) {
+            if (it.messages.back().text.empty()) {
                 continue;
             }
             addMessageToDialog(it);
@@ -267,38 +313,72 @@ void MainWidget::sendMessage() {
         return;
     }
     JsonData message;
-    message.transmitterId = sessionInformation.userId;
-    message.receiverId = dialogId(selectedContact->back());
-    message.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
-    message.text = messageTextBrowser->toPlainText().toUtf8().constData();
+    MessageData mess;
+
+    message.users.push_back(UserData());
+    message.users.back().userId = sessionInformation.users.back().userId;
+    message.users.back().name = sessionInformation.users.back().name;
+
+    message.requestType = "message";
+    message.requestStatus = 1;
+    message.errorDescription = 0;
+
+    mess.transmitterId = sessionInformation.users.back().userId;
+    mess.receiverId = dialogId(selectedContact->back());
+//    mess.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+    auto temp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    char timestr[100];
+    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&temp));
+    mess.date = timestr;
+
+
+    mess.text = messageTextBrowser->toPlainText().toUtf8().constData();
+    mess.contentType = "text";
+    mess.chatType = "private";
+    message.messages.push_back(mess);
+
     sendMessage(message);
 }
 
 
 void MainWidget::sendMessage(JsonData& message) {
-    message.transmitterId = sessionInformation.userId;
-    message.receiverId = dialogId(selectedContact->back());
-    message.name = selectedContact->back().name;
 
-    auto messageStr = JsonParser::jsonDataToJson(message);
+    message.messages.back().transmitterId = sessionInformation.users.back().userId;
+    message.messages.back().receiverId = dialogId(selectedContact->back());
 
-    std::string replyStr = "";
-    if (!serverConnection.start()) {
-        replyStr = serverConnection.echoWriteRead(messageStr);
-    }
-    serverConnection.stop();
+//    message.users.back().name = selectedContact->back().users.back().name;
 
-    if (replyStr != messageStr) {
-        std::cout << "message not delivered" << std::endl;
-        message.text = "<not delivered> | " + message.text;
-    } else {
-        message.status = true;
-        std::cout << "message was sended" << std::endl;
-    }
+//    auto messageStr = JsonParser::jsonDataToJson(message);
+
+    auto reply = client->write_message(message);
+
+//    std::cout << JsonParser::jsonDataToJson(message) << std::endl;
+
+//    std::string replyStr = "";
+//    if (!serverConnection.start()) {
+//        replyStr = serverConnection.echoWriteRead(messageStr);
+//    }
+//    serverConnection.stop();
+
+//    if (replyStr != messageStr) {
+//        std::cout << "message not delivered" << std::endl;
+//        message.messages.back().text = "<not delivered> | " + message.messages.back().text;
+//    } else {
+//        message.requestStatus = 1;
+//        std::cout << "message was sended" << std::endl;
+//    }
+
+        if (reply.errorDescription) {
+            std::cout << "message not delivered" << std::endl;
+            message.messages.back().text = "<not delivered> | " + message.messages.back().text;
+        } else {
+            message.requestStatus = 1;
+            std::cout << "message was sended" << std::endl;
+        }
 
     selectedContact->push_back(message);
 
-    if (message.contentType == "audio") {
+    if (message.messages.back().contentType == "audio") {
         addVoiceMessageToDialog(message);
         return;
     }
@@ -309,59 +389,59 @@ void MainWidget::sendMessage(JsonData& message) {
     for (auto &it: dialogMap->contactWidget) {
         it.second->update(dialogMap->map[it.first].back());
     }
+
 }
 
 
-void MainWidget::sendFile(const std::string& filePath) {
+void MainWidget::sendFile(const std::string filePath) {
     QFile f(QString::fromStdString(filePath));
-    if (!f.open(QIODevice::ReadOnly)) {
+    if (!f.exists()) {
+        std::cout << "bruh" << std::endl;
         return;
     }
 
-    if (serverConnection.start()) {
-        serverConnection.stop();
-        std::cout << "connection error" << std::endl;
-        return;
-    }
+//    if (!f.open(QIODevice::ReadOnly)) {
+//        std::cout << "bruh2" << std::endl;
+//        return;
+//    }
 
-    std::cout << std::to_string(f.size()) << std::endl;
+        client->sendFile(filePath);
 
-    std::string fileStr(f.read(f.size()).constData(), f.size());
 
-    std::string receiveFileStr =
-        serverConnection.echoWriteReadFile(std::to_string(f.size()), fileStr);
-
-    serverConnection.stop();
-    f.close();
 }
 
 
 void MainWidget::receiveAudio(JsonData data) {
-    QFile f(QString::fromStdString("testAudio"));
-    if (!f.open(QIODevice::ReadOnly)) {
-        return;
-    }
 
-    if (serverConnection.start()) {
-        serverConnection.stop();
-        std::cout << "connection error" << std::endl;
-        return;
-    }
+    client->fileName = "audio/" + data.messages.back().text;
 
-    std::cout << std::to_string(f.size()) << std::endl;
 
-    std::string fileStr(f.read(f.size()).constData(), f.size());
 
-    std::string receiveFileStr =
-        serverConnection.echoWriteReadFile(std::to_string(f.size()), fileStr);
-    serverConnection.stop();
-    f.close();
+//    QFile f(QString::fromStdString("testAudio"));
+//    if (!f.open(QIODevice::ReadOnly)) {
+//        return;
+//    }
 
-//-----------------------
-    QFile r("audio/temp");
-    QString temp = "audio/" + QString::fromStdString(data.text);
-    r.rename(temp);
-    r.close();
+//    if (serverConnection.start()) {
+//        serverConnection.stop();
+//        std::cout << "connection error" << std::endl;
+//        return;
+//    }
+
+//    std::cout << std::to_string(f.size()) << std::endl;
+
+//    std::string fileStr(f.read(f.size()).constData(), f.size());
+
+//    std::string receiveFileStr =
+//        serverConnection.echoWriteReadFile(std::to_string(f.size()), fileStr);
+//    serverConnection.stop();
+//    f.close();
+
+////-----------------------
+//    QFile r("audio/temp");
+//    QString temp = "audio/" + QString::fromStdString(data.messages.back().text);
+//    r.rename(temp);
+//    r.close();
 }
 
 
@@ -402,10 +482,13 @@ void MainWidget::recordAudio() {
 
     contactListWidget->setEnabled(false);
     recordThread("audio/1.wav").record();
+
 }
 
 
 void MainWidget::stopRecordAudio() {
+
+
     recordThread.stop();
 
     connect(contactListWidget.get(), SIGNAL(itemClicked(QListWidgetItem*)),
@@ -413,30 +496,51 @@ void MainWidget::stopRecordAudio() {
     contactListWidget->setEnabled(true);
 
     JsonData data;
-    data.userId = sessionInformation.userId;
-    data.transmitterId = sessionInformation.userId;
-    data.receiverId = dialogId(selectedContact->back());
-    data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
-    data.contentType = "audio";
-    data.text = "";
-    data.text.append(std::to_string(data.userId));
-    data.text.append(" -> ");
-    data.text.append(std::to_string(dialogId(selectedContact->back())));
-    data.text.append("|");
+    MessageData messData;
+    data.users.push_back(UserData());
+    data.users.back().userId = sessionInformation.users.back().userId;
+    messData.transmitterId = sessionInformation.users.back().userId;
+    messData.receiverId = dialogId(selectedContact->back());
+//    messData.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
 
-    auto t = std::time_t(std::stol(data.date));
+
+
+    auto temp2 = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     char timestr[100];
-    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&temp2));
+    messData.date = timestr;
 
-    data.text.append(timestr);
-    data.text.append(".wav");
+
+    messData.contentType = "audio";
+    messData.text = "";
+    messData.text.append(std::to_string(data.users.back().userId));
+    messData.text.append(" -> ");
+    messData.text.append(std::to_string(dialogId(selectedContact->back())));
+    messData.text.append("|");
+    data.messages.push_back(messData);
+
+
+
+//    auto t = std::time_t(std::stol(data.messages.back().date));
+//    std::string timestr = data.messages.back().date;
+
+    std::string timestr2 = data.messages.back().date;
+
+//    char timestr[100];
+//    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+
+    data.messages.back().text.append(timestr2);
+    data.messages.back().text.append(".wav");
+    data.requestType = "message";
 
     QFile f("audio/1.wav");
-    QString temp = "audio/" + QString::fromStdString(data.text);
+    QString temp = "audio/" + QString::fromStdString(data.messages.back().text);
     f.rename(temp);
     f.close();
 
     sendMessage(data);
+
+    std::cout << temp.toStdString() << std::endl;
     sendFile(temp.toStdString());
 }
 
@@ -482,23 +586,33 @@ void MainWidget::stop() {
 }
 
 
-void MainWidget::receiveMessage(std::string& messageStr) {
-    if (serverConnection.start()) {
-        std::cout << "no connection" << std::endl;
+void MainWidget::receiveMessage(QString messageStr) {
+//    if (serverConnection.start()) {
+//        std::cout << "no connection" << std::endl;
+//        return;
+//    }
+
+//    std::string replyStr = serverConnection.echoWriteRead(messageStr);
+//    serverConnection.stop();
+
+//    auto reply = JsonParser::jsonToJsonData(replyStr);
+
+    auto input = messageStr.toStdString();
+
+    if (input.empty()) {
         return;
     }
 
-    std::string replyStr = serverConnection.echoWriteRead(messageStr);
-    serverConnection.stop();
-
-    auto reply = JsonParser::jsonToJsonData(replyStr);
+    auto reply = JsonParser::jsonToJsonData(input);
 
     dialogMap->addMessage(reply);
-    if (reply.contentType == "audio") {
+    if (reply.messages.back().contentType == "audio") {
         receiveAudio(reply);
     }
 
-    std::cout << "bruh" << std::endl;
+
+
+//    std::cout << input << std::endl;
 
     auto selectedItems = contactListWidget->selectedItems();
     int idx = 0;
@@ -509,21 +623,30 @@ void MainWidget::receiveMessage(std::string& messageStr) {
         }
     }
 
-    auto temp = contactList->list.begin();
-    for (int j = 0; j < idx; ++j) {
-        ++temp;
+
+    std::size_t dialogId;
+    if (!selectedItems.isEmpty()) {
+        auto temp = contactList->list.begin();
+        for (int j = 0; j < idx; ++j) {
+            ++temp;
+        }
+        dialogId = temp->messages.back().transmitterId;
     }
-    int dialogId = temp->transmitterId;
+
+
 
     contactList->add(reply);
+
     dialogMap->clearContactWidget();
     contactListWidget->clear();
     makeContactList();
 
+
+
     if (!selectedItems.isEmpty()) {
         int k = 0;
         for (auto &it: contactList->list) {
-            if (it.transmitterId == dialogId) {
+            if (it.messages.back().transmitterId == dialogId) {
                 break;
             }
             ++k;
@@ -539,8 +662,13 @@ void MainWidget::receiveMessage(std::string& messageStr) {
 }
 
 
+
 void MainWidget::testSlot() {
+    std::cout << std::endl;
     std::cout << "testSlot" << std::endl;
+
+    std::cout << "selected contact: " << std::endl;
+    std::cout << JsonParser::jsonDataToJson(selectedContact->back()) << std::endl;
 
 //    addContact();
 //    return;
@@ -567,30 +695,98 @@ void MainWidget::testSlot() {
 
 //    ----------------------------
 
-//    sendFile("123");
+//        JsonData data;
+//        data.users.push_back(UserData());
+//        data.messages.push_back(MessageData());
+//        data.users.back().userId = 213;
+//        data.messages.back().receiverId = sessionInformation.users.back().userId;
+//        data.messages.back().transmitterId = 213;
+//        data.users.back().name = "contact #" + std::to_string(data.users.back().userId);
+//        data.messages.back().date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+////        data.messages.back().contentType = "audio";
+//        data.messages.back().contentType = "text";
+//        data.messages.back().text = "";
+//        data.messages.back().text.append(std::to_string(data.users.back().userId));
+//        data.messages.back().text.append(" -> ");
+//        data.messages.back().text.append(std::to_string(sessionInformation.users.back().userId));
+//        data.messages.back().text.append("|");
 
-        JsonData data;
-        data.userId = 213;
-        data.receiverId = sessionInformation.userId;
-        data.transmitterId = 213;
-        data.name = "contact #" + std::to_string(data.userId);
-        data.date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
-        data.contentType = "audio";
-        data.text = "";
-        data.text.append(std::to_string(data.userId));
-        data.text.append(" -> ");
-        data.text.append(std::to_string(sessionInformation.userId));
-        data.text.append("|");
+//        auto t = std::time_t(std::stol(data.messages.back().date));
+//        char timestr[100];
+//        std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
 
-        auto t = std::time_t(std::stol(data.date));
-        char timestr[100];
-        std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&t));
+//        data.messages.back().text.append(timestr);
+//        data.messages.back().text.append(".wav");
 
-        data.text.append(timestr);
-        data.text.append(".wav");
+//        auto temp = JsonParser::jsonDataToJson(data);
+//        receiveMessage(temp);
 
-        auto temp = JsonParser::jsonDataToJson(data);
-        receiveMessage(temp);
+//        ----------------------------
+
+//    if (!serverConnection.start()) {
+//        std::cout << "no connection" << std::endl;
+//        serverConnection.stop();
+//        return;
+//    }
+
+//    auto data = JsonParser::jsonDataToJson(sessionInformation);
+//    serverConnection.write(data);
+
+//        ===========================================
+
+//    for (auto &it: dialogMap->map) {
+//        std::cout << it.first << " " << it.second.back().users.back().userId << std::endl;
+//    }
+
+
+//      std::cout << "session information: " <<
+//                   sessionInformation.users.back().userId << std::endl;
+
+
+    //    //    ===========================================
+
+    //        std::cout << "bruh" << std::endl;
+    //        std::cout << JsonParser::jsonDataToJson(message) << std::endl;
+
+    //    //    ===========================================
+
+
+//        //    ===========================================
+
+//            for (auto &it: dialogMap->map) {
+//                for (auto &mit: it.second) {
+//            std::cout << it.first << ": " <<
+//                      JsonParser::jsonDataToJson(mit) << std::endl;
+//                }
+//            }
+
+//        //    ===========================================
+
+//    //    ===========================================
+
+//        for (auto &it: contactList->list) {
+//            std::cout << JsonParser::jsonDataToJson(it) << std::endl;
+//        }
+
+//    //    ===========================================
+
+//        JsonData data;
+//        data.messages.push_back(MessageData());
+//        data.users.push_back(UserData());
+
+//        data.messages.back().transmitterId = 7555;
+
+//        data.messages.back().date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+
+//        data.messages.back().text = "message #";
+//        data.messages.back().text.append(std::to_string(23));
+//        data.users.back().name = "contact #";
+//        data.users.back().name.append(std::to_string(7555));
+//        data.messages.back().receiverId = 119;
+
+//        auto temp = JsonParser::jsonDataToJson(data);
+//        receiveMessage(temp);
+
 }
 
 
@@ -605,19 +801,32 @@ void MainWidget::addContact() {
     dialogWidget->clear();
 
     newDialogWidget->show();
+    newDialogWidget->readSessionInformation(sessionInformation);
 }
 
 
 void MainWidget::createNewDialog(QString text) {
     std::cout << "createNewDialog" << std::endl;
 
-    newDialogWidget->readSessionInformation(sessionInformation);
-
     dialogMessagePtr->clear();
     bottomBoardWidget->show();
     dialogWidget->clear();
 
     auto temp = JsonParser::jsonToJsonData(text.toStdString());
+
+    temp.messages.push_back(MessageData());
+
+//            std::cout << text.toStdString() << std::endl;
+
+    temp.messages.back().receiverId = sessionInformation.users.back().userId;
+    temp.messages.back().transmitterId = temp.users.back().userId;
+//    temp.messages.back().date = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+
+    auto temp1 = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    char timestr[100];
+    std::strftime(timestr, sizeof(timestr), "%F %T", std::localtime(&temp1));
+    temp.messages.back().date = timestr;
+
 
     int j = 0;
     for (auto &it: contactList.get()->list) {
@@ -630,10 +839,15 @@ void MainWidget::createNewDialog(QString text) {
         j++;
     }
 
+
     dialogMap->addMessage(temp);
     selectedContact = &dialogMap->map[dialogId(temp)];
-
     contactList->add(temp);
+
+//    for (auto &it: contactList->list) {
+//        std::cout << JsonParser::jsonDataToJson(it) << std::endl;
+//    }
+
     dialogMap->clearContactWidget();
     contactListWidget->clear();
     makeContactList();
@@ -655,7 +869,7 @@ void MainWidget::createNewDialog(QString text) {
 
 void MainWidget::writeCache(DialogMapClass &dialogMap) {
     QDir dir("cache/archive");
-    QFile f(dir.path() + "/" + QString::fromStdString(sessionInformation.login));
+    QFile f(dir.path() + "/" + QString::fromStdString(sessionInformation.users.back().login));
     if (!f.open(QIODevice::WriteOnly)) {
         return;
     }
@@ -669,12 +883,87 @@ void MainWidget::writeCache(DialogMapClass &dialogMap) {
     f.close();
 }
 
+static std::size_t endJson(const std::string& str) {
+    std::list<int> list;
+    size_t i = 0;
+    for (auto &it: str) {
+        ++i;
+        if (it == '{') {
+            list.push_back(1);
+        }
+        if (it == '}') {
+            list.pop_back();
+            if (list.empty()) {
+                break;
+            }
+        }
+    }
+    return i;
+}
+
+//static
+
+void MainWidget::handleAuthorizeReply(JsonData data) {
+    if (data.messages.empty()) {
+        return;
+    }
+    for (auto it: data.messages) {
+
+//        ----------------------------
+        if (it.contentType == "audio") {
+
+            QFile f("audio/" + QString::fromStdString(data.messages.back().text));
+            if (!f.exists()) {
+
+
+                std::cout << "file are misssed" << std::endl;
+
+                JsonData newData;
+                newData.messages.push_back(MessageData());
+                newData.messages.back().text = it.text;
+                newData.requestType = "file_required";
+
+                client->fileName = "audio/" + newData.messages.back().text;
+
+                auto reply = client->write_message(newData);
+                std::cout << JsonParser::jsonDataToJson(reply) << std::endl;
+
+            }
+        }
+
+
+//        ----------------------------
+
+
+
+
+        JsonData temp = data;
+        temp.messages.clear();
+        temp.messages.push_back(it);
+
+        dialogMap->addMessage(temp);
+        contactList->add(temp);
+    }
+
+    makeContactList();
+    for (auto &it: dialogMap->contactWidget) {
+        it.second->update(dialogMap->map[it.first].back());
+    }
+}
+
 
 void MainWidget::readCache() {
-    dialogMap->readSessionInformation(sessionInformation);
+//    dialogMap->readSessionInformation(sessionInformation);
 
     QDir dir("cache/archive");
-    QFile f(dir.path() + "/" + QString::fromStdString(sessionInformation.login));
+    QFile f(dir.path() + "/" + QString::fromStdString(sessionInformation.users.back().login));
+
+//    ----------------------------------
+
+// если файла не существует - запросить всю историю
+
+
+//    ------------------------------------
     if (!f.open(QIODevice::ReadOnly)) {
         return;
     }
@@ -682,10 +971,17 @@ void MainWidget::readCache() {
     QByteArray byteArray = f.read(1048576);
     f.close();
 
+//    std::cout << std::string(byteArray) << std::endl;
+
+//    ------------------------------
+
+
+//    ------------------------------
+
     std::string str(byteArray.constData(), byteArray.length());
     while (true) {
         auto l = str.find('{');
-        auto r = str.find('}') + 1;
+        auto r = endJson(str);
 
         if (l == std::string::npos)
             break;
@@ -693,20 +989,50 @@ void MainWidget::readCache() {
         std::string temp(str, l, r);
         JsonData data = JsonParser::jsonToJsonData(temp);
 
+
+////        ----------------------------
+//        if (data.messages.back().contentType == "audio") {
+
+//            QFile f("audio/" + QString::fromStdString(data.messages.back().text));
+//            if (!f.exists()) {
+
+
+//                std::cout << "file are misssed" << std::endl;
+
+//                JsonData newData;
+//                newData.messages.push_back(MessageData());
+//                newData.messages.back().text = data.messages.back().text;
+//                newData.requestType = "file_required";
+
+//                client->fileName = "audio/" + newData.messages.back().text;
+
+//                auto reply = client->write_message(newData);
+//                std::cout << JsonParser::jsonDataToJson(reply) << std::endl;
+
+//            }
+//        }
+
+
+////        ----------------------------
+
         dialogMap->addMessage(data);
         contactList->add(data);
 
         str = std::string(str, r + 1);
     }
 
+//    ------------------------------
+
     makeContactList();
     for (auto &it: dialogMap->contactWidget) {
         it.second->update(dialogMap->map[it.first].back());
     }
 
-    for (auto &it: contactList->list) {
-        std::cout << it.transmitterId << " " << it.receiverId << ": " << it.text << std::endl;
-    }
+//    for (auto &it: contactList->list) {
+//        std::cout << it.messages.back().transmitterId << " "
+//        << it.messages.back().receiverId << ": "
+//        << it.messages.back().text << std::endl;
+//    }
 }
 
 
@@ -716,9 +1042,12 @@ void MainWidget::readSessionInformation(JsonData data) {
 
 
 void MainWidget::closeEvent(QCloseEvent*) {
-    QFile f("cache/archive/" + QString::fromStdString(sessionInformation.login));
+    QFile f("cache/archive/" + QString::fromStdString(sessionInformation.users.back().login));
     f.remove();
     writeCache(*dialogMap);
+
+    sessionInformation.requestType = "deauthorize";
+    client->write_message(sessionInformation);
 
     newDialogWidget->close();
     this->close();

@@ -14,6 +14,7 @@ AudioOutput::AudioOutput(QString fileName) {
     audioFormat.setSampleType(QAudioFormat::SignedInt);
 
     audio = new QAudioOutput(audioFormat);
+
     // TODO handle this
 
 }
